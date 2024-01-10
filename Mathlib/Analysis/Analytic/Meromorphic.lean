@@ -122,4 +122,87 @@ lemma div {f g : 𝕜 → 𝕜} {x : 𝕜} (hf : MeromorphicAt f x) (hg : Meromo
     MeromorphicAt (f / g) x :=
   (div_eq_mul_inv f g).symm ▸ (hf.mul hg.inv)
 
+/-- The order of vanishing of a meromorphic function, as an element of `ℤ ∪ ∞` (to include the
+case of functions identically 0 near `x`). -/
+noncomputable def order {f : 𝕜 → E} {x : 𝕜} (hf : MeromorphicAt f x) : WithTop ℤ :=
+  (hf.choose_spec.order.map (↑· : ℕ → ℤ)) - hf.choose
+
+lemma order_eq_top_iff {f : 𝕜 → E} {x : 𝕜} (hf : MeromorphicAt f x) :
+    hf.order = ⊤ ↔ ∀ᶠ z in 𝓝[≠] x, f z = 0 := by
+  unfold order
+  by_cases h : hf.choose_spec.order = ⊤
+  · rw [h, WithTop.map_top, ← WithTop.coe_nat,
+      WithTop.top_sub_coe, eq_self, true_iff, eventually_nhdsWithin_iff]
+    rw [AnalyticAt.order_eq_top_iff] at h
+    filter_upwards [h] with z hf hz
+    rwa [smul_eq_zero_iff_right <| pow_ne_zero _ (sub_ne_zero.mpr hz)] at hf
+  · obtain ⟨m, hm⟩ := WithTop.ne_top_iff_exists.mp h
+    rw [← hm, WithTop.map_coe, WithTop.sub_eq_top_iff, eq_false_intro WithTop.coe_ne_top,
+      false_and, false_iff, eventually_nhdsWithin_iff]
+    contrapose! h
+    rw [AnalyticAt.order_eq_top_iff]
+    rw [← hf.choose_spec.frequently_eq_iff_eventually_eq analyticAt_const]
+    apply Filter.Eventually.frequently
+    rw [eventually_nhdsWithin_iff]
+    filter_upwards [h] with z hfz hz
+    rw [hfz hz, smul_zero]
+
+lemma order_eq_int_iff {f : 𝕜 → E} {x : 𝕜} (hf : MeromorphicAt f x) (n : ℤ) : hf.order = n ↔
+    ∃ g : 𝕜 → E, AnalyticAt 𝕜 g x ∧ g x ≠ 0 ∧ ∀ᶠ z in 𝓝[≠] x, f z = (z - x) ^ n • g z := by
+  unfold order
+  let p := hf.choose
+  change hf.choose_spec.order.map (↑· : ℕ → ℤ) - ↑p = ↑n ↔
+    ∃ g, AnalyticAt 𝕜 g x ∧ g x ≠ 0 ∧ ∀ᶠ (z : 𝕜) in 𝓝[≠] x, f z = (z - x) ^ n • g z
+  by_cases h : hf.choose_spec.order = ⊤
+  · rw [h, WithTop.map_top, ← WithTop.coe_nat, WithTop.top_sub_coe,
+      eq_false_intro WithTop.top_ne_coe, false_iff]
+    rw [AnalyticAt.order_eq_top_iff] at h
+    rintro ⟨g, hg_an, hg_ne, hg_eq⟩
+    apply hg_ne
+    apply Filter.EventuallyEq.eq_of_nhds
+    rw [Filter.EventuallyEq, ← AnalyticAt.frequently_eq_iff_eventually_eq hg_an analyticAt_const]
+    apply Filter.Eventually.frequently
+    rw [eventually_nhdsWithin_iff] at hg_eq ⊢
+    filter_upwards [h, hg_eq] with z hfz hfz_eq hz
+    rwa [hfz_eq hz, ← mul_smul, smul_eq_zero_iff_right] at hfz
+    exact mul_ne_zero (pow_ne_zero _ (sub_ne_zero.mpr hz)) (zpow_ne_zero _ (sub_ne_zero.mpr hz))
+  · obtain ⟨m, h⟩ := WithTop.ne_top_iff_exists.mp h
+    rw [← h, WithTop.map_coe, ← WithTop.coe_nat, ← WithTop.coe_sub, WithTop.coe_inj]
+    obtain ⟨g, hg_an, hg_ne, hg_eq⟩ := (AnalyticAt.order_eq_nat_iff _ _).mp h.symm
+    constructor
+    · intro hmn
+      refine hmn.symm ▸ ⟨g, hg_an, hg_ne, ?_⟩
+      rw [eventually_nhdsWithin_iff]
+      filter_upwards [hg_eq] with z hfz hz
+      rw [zpow_sub₀ (sub_ne_zero.mpr hz)]
+      convert congr_arg (fun t ↦ (z - x) ^ (-↑(hf.choose) : ℤ) • t) hfz using 1
+      · rw [← mul_smul, ← zpow_ofNat, ← zpow_add₀ (sub_ne_zero.mpr hz),
+          neg_add_self, zpow_zero, one_smul]
+      · rw [← mul_smul, ← zpow_ofNat, ← zpow_sub₀ (sub_ne_zero.mpr hz),
+         ← zpow_add₀ (sub_ne_zero.mpr hz), sub_eq_neg_add (m : ℤ)]
+    · rintro ⟨j, hj_an, hj_ne, hj_eq⟩
+      -- Locally we have f z = (z - x) ^ n • j z, and
+      -- (z - x) ^ p • f z = (z - x) ^ m • g z.
+      -- So (z - x) ^ (p + n) • j z = (z - x) ^ m • g z.
+      rw [eventually_nhdsWithin_iff] at hj_eq
+      have := hg_eq.and hj_eq
+
+
+
+
+  --   rw [eq_false_intro WithTop.top_ne_coe, false_iff]
+  --   simp_rw [not_exists]
+  --   intro g ⟨hg_an, hg_ne, hg_eq⟩
+  --   apply hg_ne
+  --   have hg_zero : ∃ᶠ z in 𝓝[≠] x, g z = 0
+  --   · refine ((hg_eq.and h).mp ?_).frequently
+  --     rw [eventually_nhdsWithin_iff]
+  --     refine Filter.eventually_of_forall (fun z hz ⟨hz', hz''⟩ ↦ ?_)
+  --     rwa [hz', smul_eq_zero_iff_right] at hz''
+  --     exact zpow_ne_zero _ (sub_ne_zero.mpr <| by tauto)
+  --   exact Filter.EventuallyEq.eq_of_nhds
+  --     (hg_an.frequently_zero_iff_eventually_zero.mp hg_zero)
+  -- · rw [WithTop.coe_inj, sub_eq_iff_eq_add]
+
+
 end MeromorphicAt
