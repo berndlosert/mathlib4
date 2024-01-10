@@ -193,7 +193,7 @@ lemma order_eq_int_iff {f : 𝕜 → E} {x : 𝕜} (hf : MeromorphicAt f x) (n :
       AnalyticAt.unique_eventuallyEq_zpow_smul_nonzero ⟨g, hg_an, hg_ne, hg_eq⟩⟩
 
 /-- Compatibility of notions of `order` for analytic and meromorphic functions. -/
-lemma MeromorphicAt.order_of_analyticAt {f : 𝕜 → E} {x : 𝕜} (hf : AnalyticAt 𝕜 f x) :
+lemma order_of_analyticAt {f : 𝕜 → E} {x : 𝕜} (hf : AnalyticAt 𝕜 f x) :
     hf.meromorphicAt.order = hf.order.map (↑·) := by
   rcases eq_or_ne hf.order ⊤ with ho | ho
   · rw [ho, WithTop.map_top, order_eq_top_iff]
@@ -239,14 +239,15 @@ variable {s t : 𝕜 → 𝕜} {f g : 𝕜 → E} {U : Set 𝕜}
   (hs : MeromorphicOn s U) (ht : MeromorphicOn t U)
   (hf : MeromorphicOn f U) (hg : MeromorphicOn g U)
 
+lemma mono_set {V : Set 𝕜} (hv : V ⊆ U) : MeromorphicOn f V := fun x hx ↦ hf x (hv hx)
+
 lemma add : MeromorphicOn (f + g) U := fun x hx ↦ (hf x hx).add (hg x hx)
 
 lemma sub : MeromorphicOn (f - g) U := fun x hx ↦ (hf x hx).sub (hg x hx)
 
 lemma neg : MeromorphicOn (-f) U := fun x hx ↦ (hf x hx).neg
 
-@[simp]
-lemma neg_iff : MeromorphicOn (-f) U ↔ MeromorphicOn f U :=
+@[simp] lemma neg_iff : MeromorphicOn (-f) U ↔ MeromorphicOn f U :=
   ⟨fun h ↦ by simpa only [neg_neg] using h.neg, neg⟩
 
 lemma smul : MeromorphicOn (s • f) U := fun x hx ↦ (hs x hx).smul (hf x hx)
@@ -255,8 +256,7 @@ lemma mul : MeromorphicOn (s * t) U := fun x hx ↦ (hs x hx).mul (ht x hx)
 
 lemma inv : MeromorphicOn s⁻¹ U := fun x hx ↦ (hs x hx).inv
 
-@[simp]
-lemma inv_iff : MeromorphicOn s⁻¹ U ↔ MeromorphicOn s U :=
+@[simp] lemma inv_iff : MeromorphicOn s⁻¹ U ↔ MeromorphicOn s U :=
   ⟨fun h ↦ by simpa only [inv_inv] using h.inv, inv⟩
 
 lemma div : MeromorphicOn (s / t) U := fun x hx ↦ (hs x hx).div (ht x hx)
@@ -266,7 +266,5 @@ lemma pow (n : ℕ) : MeromorphicOn (s ^ n) U := fun x hx ↦ (hs x hx).pow _
 lemma zpow (n : ℤ) : MeromorphicOn (s ^ n) U := fun x hx ↦ (hs x hx).zpow _
 
 end arithmetic
-
-
 
 end MeromorphicOn
