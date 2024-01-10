@@ -218,3 +218,55 @@ lemma iff_eventuallyEq_zpow_smul_analyticAt {f : 𝕜 → E} {x : 𝕜} : Meromo
     exact (((meromorphicAt_id x).sub (meromorphicAt_const _ x)).zpow _).smul hg_an.meromorphicAt
 
 end MeromorphicAt
+
+/-- Meromorphy of a function on a set. -/
+def MeromorphicOn (f : 𝕜 → E) (U : Set 𝕜) : Prop := ∀ x ∈ U, MeromorphicAt f x
+
+lemma AnalyticOn.meromorphicOn {f : 𝕜 → E} {U : Set 𝕜} (hf : AnalyticOn 𝕜 f U) :
+    MeromorphicOn f U :=
+  fun x hx ↦ (hf x hx).meromorphicAt
+
+lemma meromorphicOn_id {U : Set 𝕜} : MeromorphicOn id U := fun x _ ↦ meromorphicAt_id x
+
+lemma meromorphicOn_const (e : E) {U : Set 𝕜} : MeromorphicOn (fun _ ↦ e) U :=
+  fun x _ ↦ meromorphicAt_const e x
+
+namespace MeromorphicOn
+
+section arithmetic
+
+variable {s t : 𝕜 → 𝕜} {f g : 𝕜 → E} {U : Set 𝕜}
+  (hs : MeromorphicOn s U) (ht : MeromorphicOn t U)
+  (hf : MeromorphicOn f U) (hg : MeromorphicOn g U)
+
+lemma add : MeromorphicOn (f + g) U := fun x hx ↦ (hf x hx).add (hg x hx)
+
+lemma sub : MeromorphicOn (f - g) U := fun x hx ↦ (hf x hx).sub (hg x hx)
+
+lemma neg : MeromorphicOn (-f) U := fun x hx ↦ (hf x hx).neg
+
+@[simp]
+lemma neg_iff : MeromorphicOn (-f) U ↔ MeromorphicOn f U :=
+  ⟨fun h ↦ by simpa only [neg_neg] using h.neg, neg⟩
+
+lemma smul : MeromorphicOn (s • f) U := fun x hx ↦ (hs x hx).smul (hf x hx)
+
+lemma mul : MeromorphicOn (s * t) U := fun x hx ↦ (hs x hx).mul (ht x hx)
+
+lemma inv : MeromorphicOn s⁻¹ U := fun x hx ↦ (hs x hx).inv
+
+@[simp]
+lemma inv_iff : MeromorphicOn s⁻¹ U ↔ MeromorphicOn s U :=
+  ⟨fun h ↦ by simpa only [inv_inv] using h.inv, inv⟩
+
+lemma div : MeromorphicOn (s / t) U := fun x hx ↦ (hs x hx).div (ht x hx)
+
+lemma pow (n : ℕ) : MeromorphicOn (s ^ n) U := fun x hx ↦ (hs x hx).pow _
+
+lemma zpow (n : ℤ) : MeromorphicOn (s ^ n) U := fun x hx ↦ (hs x hx).zpow _
+
+end arithmetic
+
+
+
+end MeromorphicOn
