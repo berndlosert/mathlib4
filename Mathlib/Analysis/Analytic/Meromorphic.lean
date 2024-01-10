@@ -233,11 +233,11 @@ lemma meromorphicOn_const (e : E) {U : Set 𝕜} : MeromorphicOn (fun _ ↦ e) U
 
 namespace MeromorphicOn
 
-section arithmetic
-
 variable {s t : 𝕜 → 𝕜} {f g : 𝕜 → E} {U : Set 𝕜}
   (hs : MeromorphicOn s U) (ht : MeromorphicOn t U)
   (hf : MeromorphicOn f U) (hg : MeromorphicOn g U)
+
+section arithmetic
 
 lemma mono_set {V : Set 𝕜} (hv : V ⊆ U) : MeromorphicOn f V := fun x hx ↦ hf x (hv hx)
 
@@ -266,5 +266,9 @@ lemma pow (n : ℕ) : MeromorphicOn (s ^ n) U := fun x hx ↦ (hs x hx).pow _
 lemma zpow (n : ℤ) : MeromorphicOn (s ^ n) U := fun x hx ↦ (hs x hx).zpow _
 
 end arithmetic
+
+lemma congr (h_eq : Set.EqOn f g U) (hu : IsOpen U) : MeromorphicOn g U := by
+  refine fun x hx ↦ (hf x hx).congr (EventuallyEq.filter_mono ?_ nhdsWithin_le_nhds)
+  exact eventually_of_mem (hu.mem_nhds hx) h_eq
 
 end MeromorphicOn
