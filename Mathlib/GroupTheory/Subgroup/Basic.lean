@@ -1026,6 +1026,11 @@ theorem mem_iInf {ι : Sort*} {S : ι → Subgroup G} {x : G} : (x ∈ ⨅ i, S 
 #align subgroup.mem_infi Subgroup.mem_iInf
 #align add_subgroup.mem_infi AddSubgroup.mem_iInf
 
+@[to_additive]
+theorem mem_iInf₂ {ι : Sort*} {S : ι → Subgroup G} {p : ι → Prop} {x : G} :
+    (x ∈ ⨅ i, ⨅ _ : p i, S i) ↔ ∀ i, p i → x ∈ S i := by
+  simp only [mem_iInf]
+
 @[to_additive (attr := simp, norm_cast)]
 theorem coe_iInf {ι : Sort*} {S : ι → Subgroup G} : (↑(⨅ i, S i) : Set G) = ⋂ i, S i := by
   simp only [iInf, coe_sInf, Set.biInter_range]

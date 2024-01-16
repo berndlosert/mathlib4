@@ -111,27 +111,31 @@ end Monoid
 section Group
 
 open MulAction
+open Pointwise
 
-variable (M : Type*) {α : Type*} [Group M] [MulAction M α]
+variable (G : Type*) {α : Type*} [Group G] [MulAction G α]
 
 /-- The subgroup fixing a set under a `MulAction`. -/
 @[to_additive " The additive subgroup fixing a set under an `AddAction`. "]
-def fixingSubgroup (s : Set α) : Subgroup M :=
-  { fixingSubmonoid M s with inv_mem' := fun hx z => by rw [inv_smul_eq_iff, hx z] }
+def fixingSubgroup (s : Set α) : Subgroup G :=
+  { fixingSubmonoid G s with inv_mem' := fun hx z => by rw [inv_smul_eq_iff, hx z] }
 #align fixing_subgroup fixingSubgroup
 #align fixing_add_subgroup fixingAddSubgroup
 
-theorem mem_fixingSubgroup_iff {s : Set α} {m : M} : m ∈ fixingSubgroup M s ↔ ∀ y ∈ s, m • y = y :=
+scoped[MulAction] notation:max G "•[" s "]" => fixingSubgroup G s
+scoped[AddAction] notation:max G "+ᵥ[" s "]" => fixingAddSubgroup G s
+
+theorem mem_fixingSubgroup_iff {s : Set α} {m : G} : m ∈ fixingSubgroup G s ↔ ∀ y ∈ s, m • y = y :=
   ⟨fun hg y hy => hg ⟨y, hy⟩, fun h ⟨y, hy⟩ => h y hy⟩
 #align mem_fixing_subgroup_iff mem_fixingSubgroup_iff
 
-theorem mem_fixingSubgroup_iff_subset_fixedBy {s : Set α} {m : M} :
-    m ∈ fixingSubgroup M s ↔ s ⊆ fixedBy α m := by
+theorem mem_fixingSubgroup_iff_subset_fixedBy {s : Set α} {m : G} :
+    m ∈ fixingSubgroup G s ↔ s ⊆ fixedBy α m := by
   rw [mem_fixingSubgroup_iff, Set.subset_def]
   simp only [mem_fixedBy]
 
-theorem mem_fixingSubgroup_compl_iff_movedBy_subset {s : Set α} {m : M} :
-    m ∈ fixingSubgroup M sᶜ ↔ (fixedBy α m)ᶜ ⊆ s := by
+theorem mem_fixingSubgroup_compl_iff_movedBy_subset {s : Set α} {m : G} :
+    m ∈ fixingSubgroup G sᶜ ↔ (fixedBy α m)ᶜ ⊆ s := by
   rw [mem_fixingSubgroup_iff_subset_fixedBy]
   exact Set.compl_subset_comm
 
@@ -139,59 +143,67 @@ variable (α)
 
 /-- The Galois connection between fixing subgroups and fixed points of a group action -/
 theorem fixingSubgroup_fixedPoints_gc :
-    GaloisConnection (OrderDual.toDual ∘ fixingSubgroup M)
-      ((fun P : Subgroup M => fixedPoints P α) ∘ OrderDual.ofDual) :=
+    GaloisConnection (OrderDual.toDual ∘ fixingSubgroup G)
+      ((fun P : Subgroup G => fixedPoints P α) ∘ OrderDual.ofDual) :=
   fun _s _P => ⟨fun h s hs p => h p.2 ⟨s, hs⟩, fun h p hp s => h s.2 ⟨p, hp⟩⟩
 #align fixing_subgroup_fixed_points_gc fixingSubgroup_fixedPoints_gc
 
-theorem fixingSubgroup_antitone : Antitone (fixingSubgroup M : Set α → Subgroup M) :=
-  (fixingSubgroup_fixedPoints_gc M α).monotone_l
+theorem fixingSubgroup_antitone : Antitone (fixingSubgroup G : Set α → Subgroup G) :=
+  (fixingSubgroup_fixedPoints_gc G α).monotone_l
 #align fixing_subgroup_antitone fixingSubgroup_antitone
 
-theorem fixedPoints_subgroup_antitone : Antitone fun P : Subgroup M => fixedPoints P α :=
-  (fixingSubgroup_fixedPoints_gc M α).monotone_u.dual_left
+theorem fixedPoints_subgroup_antitone : Antitone fun P : Subgroup G => fixedPoints P α :=
+  (fixingSubgroup_fixedPoints_gc G α).monotone_u.dual_left
 #align fixed_points_subgroup_antitone fixedPoints_subgroup_antitone
+
+variable {α}
 
 /-- Fixing subgroup of union is intersection -/
 theorem fixingSubgroup_union {s t : Set α} :
-    fixingSubgroup M (s ∪ t) = fixingSubgroup M s ⊓ fixingSubgroup M t :=
-  (fixingSubgroup_fixedPoints_gc M α).l_sup
+    fixingSubgroup G (s ∪ t) = fixingSubgroup G s ⊓ fixingSubgroup G t :=
+  (fixingSubgroup_fixedPoints_gc G α).l_sup
 #align fixing_subgroup_union fixingSubgroup_union
 
 /-- Fixing subgroup of iUnion is intersection -/
 theorem fixingSubgroup_iUnion {ι : Sort*} {s : ι → Set α} :
-    fixingSubgroup M (⋃ i, s i) = ⨅ i, fixingSubgroup M (s i) :=
-  (fixingSubgroup_fixedPoints_gc M α).l_iSup
+    fixingSubgroup G (⋃ i, s i) = ⨅ i, fixingSubgroup G (s i) :=
+  (fixingSubgroup_fixedPoints_gc G α).l_iSup
 #align fixing_subgroup_Union fixingSubgroup_iUnion
 
+/--
+The fixing subgroup of an `sUnion` is the infimum of the fixing subgroups of the sets.
+-/
+theorem fixingSubgroup_sUnion {s : Set (Set α)} :
+    fixingSubgroup G (⋃₀ s) = ⨅ t ∈ s, fixingSubgroup G t := by
+  rw [Set.sUnion_eq_iUnion, fixingSubgroup_iUnion, iInf_subtype]
+
 /-- Fixed points of sup of subgroups is intersection -/
-theorem fixedPoints_subgroup_sup {P Q : Subgroup M} :
+theorem fixedPoints_subgroup_sup {P Q : Subgroup G} :
     fixedPoints (↥(P ⊔ Q)) α = fixedPoints P α ∩ fixedPoints Q α :=
-  (fixingSubgroup_fixedPoints_gc M α).u_inf
+  (fixingSubgroup_fixedPoints_gc G α).u_inf
 #align fixed_points_subgroup_sup fixedPoints_subgroup_sup
 
 /-- Fixed points of iSup of subgroups is intersection -/
-theorem fixedPoints_subgroup_iSup {ι : Sort*} {P : ι → Subgroup M} :
+theorem fixedPoints_subgroup_iSup {ι : Sort*} {P : ι → Subgroup G} :
     fixedPoints (↥(iSup P)) α = ⋂ i, fixedPoints (P i) α :=
-  (fixingSubgroup_fixedPoints_gc M α).u_iInf
+  (fixingSubgroup_fixedPoints_gc G α).u_iInf
 #align fixed_points_subgroup_supr fixedPoints_subgroup_iSup
 
 /-- The orbit of the fixing subgroup of `sᶜ` (ie. the moving subgroup of `s`) is a subset of `s` -/
 theorem orbit_fixingSubgroup_compl_subset {s : Set α}
-    {a : α} (a_in_s : a ∈ s) : MulAction.orbit (fixingSubgroup M sᶜ) a ⊆ s := by
+    {a : α} (a_in_s : a ∈ s) : MulAction.orbit (fixingSubgroup G sᶜ) a ⊆ s := by
   intro b b_in_orbit
   let ⟨⟨g, g_fixing⟩, g_eq⟩ := MulAction.mem_orbit_iff.mp b_in_orbit
   rw [Submonoid.mk_smul] at g_eq
   rw [mem_fixingSubgroup_compl_iff_movedBy_subset] at g_fixing
   rwa [← g_eq, ← smul_mem_of_set_mem_fixedBy (set_mem_fixedBy_of_movedBy_subset g_fixing)]
 
-variable {α} in
 /--
 The fixing subgroup of a set `s` is disjoint from the fixing subgroup of `sᶜ`
 if the action is faithful.
 -/
-theorem fixingSubgroup_compl_disjoint [FaithfulSMul M α] (s : Set α) :
-    Disjoint (fixingSubgroup M s) (fixingSubgroup M sᶜ) := by
+theorem fixingSubgroup_compl_disjoint [FaithfulSMul G α] (s : Set α) :
+    Disjoint (fixingSubgroup G s) (fixingSubgroup G sᶜ) := by
   rw [Subgroup.disjoint_def]
   intro x x_in_fs x_in_fsc
   rw [mem_fixingSubgroup_iff_subset_fixedBy] at x_in_fs
@@ -201,90 +213,32 @@ theorem fixingSubgroup_compl_disjoint [FaithfulSMul M α] (s : Set α) :
   rw [← Set.union_compl_self s]
   apply Set.union_subset <;> assumption
 
-section MovingSubgroup
-
-variable (G : Type*) {α : Type*} [Group G] [MulAction G α]
-
-def movingSubgroup (s : Set α) := fixingSubgroup G sᶜ
-
-theorem movingSubgroup_eq_fixingSubgroup_compl :
-    movingSubgroup G (α := α) = fixingSubgroup G (α := α) ∘ compl := rfl
-
-@[simp]
-theorem movingSubgroup_compl_eq_fixingSubgroup (s : Set α) :
-    movingSubgroup G sᶜ = fixingSubgroup G s := by
-  rw [movingSubgroup, compl_compl]
-
-theorem movingSubgroup_monotone : Monotone (movingSubgroup G (α := α)) :=
-  Antitone.comp (fixingSubgroup_antitone G α) compl_anti
-
-theorem mem_movingSubgroup_iff (s : Set α) (g : G) :
-    g ∈ movingSubgroup G s ↔ (fixedBy α g)ᶜ ⊆ s := by
-  rw [movingSubgroup, mem_fixingSubgroup_iff_subset_fixedBy]
-  exact Set.compl_subset_comm
-
-@[simp]
-theorem movingSubgroup_inter (s t : Set α) :
-    movingSubgroup G s ⊓ movingSubgroup G t = movingSubgroup G (s ∩ t) := by
-  ext g
-  rw [Subgroup.mem_inf]
-  repeat rw [mem_movingSubgroup_iff]
-  rw [Set.subset_inter_iff]
-
-@[simp]
-theorem movingSubgroup_univ : movingSubgroup G (Set.univ : Set α) = ⊤ := by
-  ext g
-  rw [mem_movingSubgroup_iff]
-  exact ⟨fun _ => Subgroup.mem_top g, fun _ => Set.subset_univ _⟩
-
-theorem movingSubgroup_sInter (s : Set (Set α)) :
-    movingSubgroup G (⋂₀ s) = ⨅ t ∈ s, movingSubgroup G t := by
-  ext x
-  simp only [mem_movingSubgroup_iff, Set.subset_sInter_iff, Subgroup.mem_iInf]
-
-open Pointwise in
-@[simp]
-theorem movingSubgroup_smul (s : Set α) (g : G) :
-    movingSubgroup G (g • s) = MulAut.conj g • movingSubgroup G s := by
+theorem fixingSubgroup_smul (s : Set α) (g : G) : G•[g • s] = MulAut.conj g • G•[s] := by
   ext h
-  rw [mem_movingSubgroup_iff, Set.subset_set_smul_iff, Set.smul_set_compl, smul_fixedBy, inv_inv,
-    Subgroup.mem_pointwise_smul_iff_inv_smul_mem, mem_movingSubgroup_iff, MulAut.smul_def,
-    MulAut.conj_inv_apply]
-
-theorem orbit_movingSubgroup_subset {s : Set α}
-    {a : α} (a_in_s : a ∈ s) : MulAction.orbit (movingSubgroup G s) a ⊆ s :=
-  orbit_fixingSubgroup_compl_subset G α a_in_s
+  rw [mem_fixingSubgroup_iff_subset_fixedBy, Set.set_smul_subset_iff, smul_fixedBy, inv_inv,
+    Subgroup.mem_pointwise_smul_iff_inv_smul_mem, mem_fixingSubgroup_iff_subset_fixedBy,
+    MulAut.smul_def, MulAut.conj_inv_apply]
 
 section Faithful
 
 variable [FaithfulSMul G α]
 
 @[simp]
-theorem movingSubgroup_empty : movingSubgroup G (∅ : Set α) = ⊥ := by
+theorem fixingSubgroup_univ : G•[(Set.univ : Set α)] = ⊥ := by
   ext x
-  rw [Subgroup.mem_bot, mem_movingSubgroup_iff, Set.subset_empty_iff, ←Set.compl_univ,
-    compl_inj_iff, fixedBy_eq_univ_iff_eq_one]
+  rw [Subgroup.mem_bot, mem_fixingSubgroup_iff_subset_fixedBy, Set.univ_subset_iff,
+    fixedBy_eq_univ_iff_eq_one]
 
-/--
-The moving subgroup of a set `s` is disjoint from the moving subgroup of `sᶜ`
-if the action is faithful.
--/
-theorem movingSubgroup_compl_disjoint (s : Set α) :
-    Disjoint (movingSubgroup G s) (movingSubgroup G sᶜ) := by
-  rw [movingSubgroup_eq_fixingSubgroup_compl]
-  rw [Function.comp_apply, Function.comp_apply]
-  exact fixingSubgroup_compl_disjoint G sᶜ
-
-theorem not_mem_movingSubgroup_of_compl (s : Set α) {g : G} (g_ne_one : g ≠ 1)
-    (g_in_subgroup : g ∈ movingSubgroup G sᶜ) : g ∉ movingSubgroup G s := by
+theorem not_mem_fixingSubgroup_compl_of_mem_fixingSubgroup (s : Set α) {g : G} (g_ne_one : g ≠ 1)
+    (g_in_subgroup : g ∈ G•[s]) : g ∉ G•[sᶜ] := by
   intro h₁
   apply g_ne_one
-  apply Subgroup.disjoint_def.mp (movingSubgroup_compl_disjoint G s) <;> assumption
+  apply Subgroup.disjoint_def.mp (fixingSubgroup_compl_disjoint G s) <;> assumption
 
-theorem commute_of_mem_movingSubgroup_of_disjoint_movedBy {g h : G} {s : Set α}
-    (g_in_subgroup : g ∈ movingSubgroup G s) (disjoint_movedBy : Disjoint s (fixedBy α h)ᶜ) :
+theorem commute_of_fixingSubgroup_compl_of_disjoint {g h : G} {s : Set α}
+    (g_in_subgroup : g ∈ G•[sᶜ]) (disjoint_movedBy : Disjoint s (fixedBy α h)ᶜ) :
     Commute g h := by
-  rw [mem_movingSubgroup_iff] at g_in_subgroup
+  rw [mem_fixingSubgroup_compl_iff_movedBy_subset] at g_in_subgroup
   have s_subset_fixedBy : s ⊆ fixedBy α h := by
     rwa [← Set.disjoint_compl_right_iff_subset]
   have movedBy_subset_sc : (fixedBy α h)ᶜ ⊆ sᶜ := by
@@ -309,7 +263,5 @@ theorem commute_of_mem_movingSubgroup_of_disjoint_movedBy {g h : G} {s : Set α}
       rw [g_in_subgroup (movedBy_subset_sc x_moved)]
 
 end Faithful
-
-end MovingSubgroup
 
 end Group

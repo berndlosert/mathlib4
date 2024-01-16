@@ -275,6 +275,10 @@ theorem fixedBy_eq_univ_iff_eq_one {m : M} : fixedBy α m = Set.univ ↔ m = 1 :
     rw [eq_one]
     exact movedBy_one_eq_empty α M
 
+@[to_additive]
+theorem fixedBy_univ_iff_eq_one {m : M} : fixedBy α m = Set.univ ↔ m = 1 := by
+  rw [fixedBy_eq_compl_movedBy, ← Set.compl_empty, compl_inj_iff, movedBy_empty_iff_eq_one]
+
 /--
 If the image of the `(fixedBy α g)ᶜ` set by the pointwise action of `h: G`
 is disjoint from `(fixedBy α g)ᶜ`, then `g` and `h` cannot commute.
