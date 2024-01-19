@@ -125,15 +125,18 @@ def fixingSubgroup (s : Set α) : Subgroup G :=
 scoped[MulAction] notation:max G "•[" s "]" => fixingSubgroup G s
 scoped[AddAction] notation:max G "+ᵥ[" s "]" => fixingAddSubgroup G s
 
+@[to_additive]
 theorem mem_fixingSubgroup_iff {s : Set α} {m : G} : m ∈ fixingSubgroup G s ↔ ∀ y ∈ s, m • y = y :=
   ⟨fun hg y hy => hg ⟨y, hy⟩, fun h ⟨y, hy⟩ => h y hy⟩
 #align mem_fixing_subgroup_iff mem_fixingSubgroup_iff
 
+@[to_additive]
 theorem mem_fixingSubgroup_iff_subset_fixedBy {s : Set α} {m : G} :
     m ∈ fixingSubgroup G s ↔ s ⊆ fixedBy α m := by
   rw [mem_fixingSubgroup_iff, Set.subset_def]
   simp only [mem_fixedBy]
 
+@[to_additive]
 theorem mem_fixingSubgroup_compl_iff_movedBy_subset {s : Set α} {m : G} :
     m ∈ fixingSubgroup G sᶜ ↔ (fixedBy α m)ᶜ ⊆ s := by
   rw [mem_fixingSubgroup_iff_subset_fixedBy]
