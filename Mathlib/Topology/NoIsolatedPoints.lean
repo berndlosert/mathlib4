@@ -30,7 +30,7 @@ instance NoIsolatedPoints.not_isolated [NoIsolatedPoints α] (p : α): Filter.Ne
 
 theorem nhdsWithin_punctured_prod_neBot_iff {p : α} {q : β} : Filter.NeBot (𝓝[≠] (p, q)) ↔
     Filter.NeBot (𝓝[≠] p) ∨ Filter.NeBot (𝓝[≠] q) := by
-  rw [←Set.singleton_prod_singleton, Set.compl_prod_eq_union, nhdsWithin_union,
+  rw [← Set.singleton_prod_singleton, Set.compl_prod_eq_union, nhdsWithin_union,
     nhdsWithin_prod_eq, nhdsWithin_univ, nhdsWithin_prod_eq, nhdsWithin_univ, Filter.neBot_iff,
     ne_eq, sup_eq_bot_iff, Filter.prod_eq_bot, Filter.prod_eq_bot, not_and_or, not_or, not_or]
   constructor
