@@ -825,9 +825,12 @@ theorem set_infinite_of_noIsolatedPoints [T1Space X] [NoIsolatedPoints X] {s : S
 
 variable (X) in
 /--
-If a space has no isolated points and is nonempty, then it is infinite
+If a space has no isolated points and is nonempty, then it is infinite.
+
+NOTE: setting this as `instance` causes timeouts in complex theorems using `simp` without `only`,
+as the complexity of proving `Nontrivial X` blows up.
 -/
-instance infinite_of_noIsolatedPoints [T1Space X] [NoIsolatedPoints X] [Nonempty X]: Infinite X :=
+theorem infinite_of_noIsolatedPoints [T1Space X] [NoIsolatedPoints X] [Nonempty X]: Infinite X :=
   Set.infinite_univ_iff.mp (set_infinite_of_noIsolatedPoints isOpen_univ univ_nonempty)
 
 theorem discrete_of_t1_of_finite [T1Space X] [Finite X] :
