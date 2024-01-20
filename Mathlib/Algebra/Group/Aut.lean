@@ -159,14 +159,7 @@ theorem conj_symm_apply [Group G] (g h : G) : (conj g).symm h = g⁻¹ * h * g :
   rfl
 #align mul_aut.conj_symm_apply MulAut.conj_symm_apply
 
--- NOTE: simp is still normalizing with both this rule and conj_inv_apply as simp, though the latter
--- can be made non-simp
 @[simp]
-theorem conj_inv [Group G] (g : G) : (conj g)⁻¹ = (conj g⁻¹) := by
-  ext x
-  rw [conj_apply, inv_inv]
-  rfl
-
 theorem conj_inv_apply [Group G] (g h : G) : (conj g)⁻¹ h = g⁻¹ * h * g :=
   rfl
 #align mul_aut.conj_inv_apply MulAut.conj_inv_apply
