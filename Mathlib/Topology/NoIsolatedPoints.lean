@@ -19,7 +19,8 @@ open Topology
 /--
 A topological space has no isolated point if `𝓝 p ⊓ 𝓟 {p}ᶜ ≠ ⊥` for every point `p`.
 -/
-class NoIsolatedPoints (α : Type*) [TopologicalSpace α] :=
+class NoIsolatedPoints (α : Type*) [TopologicalSpace α] : Prop :=
+  /-- The punctured neighborhood of every point is non-bot. -/
   not_isolated' : ∀ p : α, Filter.NeBot (𝓝[≠] p)
 
 variable {α β: Type*} [TopologicalSpace α] [TopologicalSpace β]
@@ -48,7 +49,7 @@ instance NoIsolatedPoints.prod_left [NoIsolatedPoints α] : NoIsolatedPoints (α
     intro ⟨p, q⟩
     rw [nhdsWithin_punctured_prod_neBot_iff]
     left
-    exact NoIsolatedPoints.not_isolated' p
+    exact NoIsolatedPoints.not_isolated p
 
 variable (α β) in
 instance NoIsolatedPoints.prod_right [NoIsolatedPoints β] : NoIsolatedPoints (α × β) where
@@ -56,4 +57,4 @@ instance NoIsolatedPoints.prod_right [NoIsolatedPoints β] : NoIsolatedPoints (�
     intro ⟨p, q⟩
     rw [nhdsWithin_punctured_prod_neBot_iff]
     right
-    exact NoIsolatedPoints.not_isolated' q
+    exact NoIsolatedPoints.not_isolated q

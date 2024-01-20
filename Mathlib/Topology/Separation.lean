@@ -814,15 +814,21 @@ theorem infinite_of_mem_nhds {X} [TopologicalSpace X] [T1Space X] (x : X) [hx : 
   exact isOpen_singleton_of_finite_mem_nhds x hs hsf
 #align infinite_of_mem_nhds infinite_of_mem_nhds
 
-variable (X) in
 /--
-If the space has no isolated points, then every nonempty open set is infinite.
+If a space has no isolated points, then every nonempty open set is infinite.
 -/
-theorem infinite_of_noIsolatedPoints [T1Space X] [NoIsolatedPoints X] {s : Set X}
+theorem set_infinite_of_noIsolatedPoints [T1Space X] [NoIsolatedPoints X] {s : Set X}
     (s_open : IsOpen s) (s_nonempty : s.Nonempty): Set.Infinite s := by
   let ⟨p, p_in_s⟩ := s_nonempty
   apply infinite_of_mem_nhds p
   exact IsOpen.mem_nhds s_open p_in_s
+
+variable (X) in
+/--
+If a space has no isolated points and is nonempty, then it is infinite
+-/
+instance infinite_of_noIsolatedPoints [T1Space X] [NoIsolatedPoints X] [Nonempty X]: Infinite X :=
+  Set.infinite_univ_iff.mp (set_infinite_of_noIsolatedPoints isOpen_univ univ_nonempty)
 
 theorem discrete_of_t1_of_finite [T1Space X] [Finite X] :
     DiscreteTopology X := by

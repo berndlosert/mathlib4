@@ -167,7 +167,6 @@ theorem conj_inv [Group G] (g : G) : (conj g)⁻¹ = (conj g⁻¹) := by
   rw [conj_apply, inv_inv]
   rfl
 
-@[simp]
 theorem conj_inv_apply [Group G] (g h : G) : (conj g)⁻¹ h = g⁻¹ * h * g :=
   rfl
 #align mul_aut.conj_inv_apply MulAut.conj_inv_apply
