@@ -10,7 +10,7 @@ import Mathlib.CategoryTheory.Functor.ReflectsIso
 #align_import algebra.category.Mon.basic from "leanprover-community/mathlib"@"0caf3701139ef2e69c215717665361cda205a90b"
 
 /-!
-# Category instances for monoid, add_monoid, comm_monoid, and add_comm_monoid.
+# Category instances for `Monoid`, `AddMonoid`, `CommMonoid`, and `AddCommMmonoid`.
 
 We introduce the bundled categories:
 * `MonCat`
@@ -86,7 +86,7 @@ instance {X Y : MonCat} : CoeFun (X ⟶ Y) fun _ => X → Y where
   coe (f : X →* Y) := f
 
 @[to_additive]
-instance Hom_FunLike (X Y : MonCat) : FunLike (X ⟶ Y) X Y :=
+instance instFunLikeHom (X Y : MonCat) : FunLike (X ⟶ Y) X Y :=
   show FunLike (X →* Y) X Y by infer_instance
 
 -- porting note: added
@@ -208,7 +208,7 @@ instance {X Y : CommMonCat} : CoeFun (X ⟶ Y) fun _ => X → Y where
   coe (f : X →* Y) := f
 
 @[to_additive]
-instance Hom_FunLike (X Y : CommMonCat) : FunLike (X ⟶ Y) X Y :=
+instance instFunLikeHom (X Y : CommMonCat) : FunLike (X ⟶ Y) X Y :=
   show FunLike (X →* Y) X Y by infer_instance
 
 -- porting note: added
