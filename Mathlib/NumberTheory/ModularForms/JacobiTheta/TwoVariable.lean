@@ -59,6 +59,25 @@ lemma summable_jacobiTheta₂_term_bound (S : ℝ) {T : ℝ} (hT : 0 < T) :
   refine tendsto_nat_cast_atTop_atTop.atTop_mul_atTop (tendsto_atTop_add_const_right _ _ ?_)
   exact tendsto_nat_cast_atTop_atTop.const_mul_atTop (mul_pos pi_pos hT)
 
+lemma continuousAt_jacobiTheta₂ (z : ℂ) {τ : ℂ} (hτ : 0 < im τ) :
+    ContinuousAt (fun p : ℂ × ℂ ↦ jacobiTheta₂ p.1 p.2) (z, τ) := by
+  obtain ⟨T, hT, hτ'⟩ := exists_between hτ
+  obtain ⟨S, hz⟩ := exists_gt |im z|
+  let V := {z | |im z| < S} ×ˢ {τ | T < im τ}
+  have : V ∈ 𝓝 (z, τ)
+  · apply prod_mem_nhds
+    exact ((_root_.continuous_abs.comp
+      continuous_im).continuousAt).preimage_mem_nhds (Iio_mem_nhds hz)
+    exact continuous_im.continuousAt.preimage_mem_nhds (Ioi_mem_nhds hτ')
+  refine ContinuousOn.continuousAt ?_ this
+  apply continuousOn_tsum
+  · intro n
+    apply Continuous.continuousOn
+    continuity
+  · exact summable_jacobiTheta₂_term_bound S hT
+  · intro n ⟨z', τ'⟩ hx
+    exact jacobiTheta₂_term_bound hT (le_of_lt hx.1) (le_of_lt hx.2) n
+
 /-- Differentiability of `Θ z τ` in `τ`, for fixed `z`. (This is weaker than differentiability
 in both variables simultaneously, but we do not have a version of
 `differentiableOn_tsum_of_summable_norm` in multiple variables yet.) -/
