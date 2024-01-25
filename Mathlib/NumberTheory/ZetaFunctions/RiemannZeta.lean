@@ -5,7 +5,7 @@ Authors: David Loeffler
 -/
 import Mathlib.Analysis.SpecialFunctions.Gamma.Beta
 import Mathlib.NumberTheory.ModularForms.JacobiTheta.OneVariable
-import Mathlib.NumberTheory.ModularForms.JacobiTheta.AbstractFuncEq
+import Mathlib.NumberTheory.ZetaFunctions.AbstractFuncEq
 import Mathlib.NumberTheory.ZetaValues
 
 #align_import number_theory.zeta_function from "leanprover-community/mathlib"@"57f9349f2fe19d2de7207e99b0341808d977cdcf"
