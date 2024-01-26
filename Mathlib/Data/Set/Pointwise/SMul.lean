@@ -1043,6 +1043,18 @@ lemma inv_smul_set_distrib (a : α) (s : Set α) : (a • s)⁻¹ = op a⁻¹ �
 lemma inv_op_smul_set_distrib (a : α) (s : Set α) : (op a • s)⁻¹ = a⁻¹ • s⁻¹ := by
   ext; simp [mem_smul_set_iff_inv_smul_mem]
 
+/--
+If `g` and `h` commute, then `g • s` is disjoint from `h • t` iff `g⁻¹ • t` is disjoint from
+`h⁻¹ • s`.
+-/
+@[to_additive "If `g` and `h` commute, then `g +ᵥ s` is disjoint from `h +ᵥ t` iff `-g +ᵥ t` is
+disjoint from `-h +ᵥ s`."]
+lemma smul_set_disjoint_inv_of_comm {g h : α} {s t : Set β} (comm : Commute g h):
+    Disjoint (g • s) (h • t) ↔ Disjoint (g⁻¹ • t) (h⁻¹ • s) := by
+  rw [Set.smul_set_disjoint g⁻¹, Set.smul_set_disjoint h⁻¹, disjoint_comm]
+  repeat rw [← mul_smul]
+  rw [inv_mul_cancel_right, comm.inv_left.inv_right.symm, inv_mul_cancel_right]
+
 end Group
 
 section GroupWithZero
