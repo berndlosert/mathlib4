@@ -26,9 +26,31 @@ variable {α : Type v}
 variable {G : Type u} [Group G] [MulAction G α]
 variable {M : Type u} [Monoid M] [MulAction M α]
 
+theorem period_eq_zero_iff_forall_pow {m : M} {a : α} :
+    period m a = 0 ↔ ∀ n > 0, m ^ n • a ≠ a := by
+  simp_rw [period, ← smul_iterate, Function.minimalPeriod_eq_zero_iff_nmem_periodicPts,
+    Function.mem_periodicPts, Function.IsPeriodicPt, Function.IsFixedPt, not_exists, not_and]
+
+theorem period_eq_zero_iff_forall_zpow {g : G} {a : α} :
+    period g a = 0 ↔ ∀ j : ℤ, j ≠ 0 → g ^ j • a ≠ a := by
+  rw [period_eq_zero_iff_forall_pow]
+  constructor
+  · intro h₁ j j_ne_zero
+    specialize h₁ j.natAbs (Int.natAbs_pos.mpr j_ne_zero)
+    rw [← zpow_ofNat] at h₁
+    cases Int.natAbs_eq j with
+    | inl h₂ =>
+      rwa [← h₂] at h₁
+    | inr h₂ =>
+      rw [← neg_eq_iff_eq_neg] at h₂
+      rwa [← h₂, ne_eq, zpow_neg, smul_eq_iff_eq_inv_smul, inv_inv, eq_comm] at h₁
+  · intro h n n_pos
+    specialize h n (Int.coe_nat_ne_zero_iff_pos.mpr n_pos)
+    rwa [zpow_ofNat] at h
+
 /-- If the action is periodic, then a lower bound for its period can be computed. -/
 @[to_additive]
-theorem period_gt_of_moved {m : M} {a : α} {n : ℕ} (period_pos : 0 < period m a)
+theorem le_period_of_moved {m : M} {a : α} {n : ℕ} (period_pos : 0 < period m a)
     (moved : ∀ k, 0 < k → k < n → m^k • a ≠ a) : n ≤ period m a := by
   by_contra period_le_n
   rw [not_le] at period_le_n
@@ -42,6 +64,16 @@ theorem period_le_of_fixed {m : M} {a : α} {n : ℕ} (n_pos : 0 < n) (fixed : m
   rw [period_eq_minimalPeriod]
   rw [fixed_iff_isPeriodicPt] at fixed
   exact Function.IsPeriodicPt.minimalPeriod_le n_pos fixed
+
+theorem period_le_natAbs_of_fixed {g : G} {a : α} {j : ℤ} (j_ne_zero : j ≠ 0)
+    (fixed : g ^ j • a = a) : period g a ≤ j.natAbs := by
+  apply period_le_of_fixed (Int.natAbs_pos.mpr j_ne_zero)
+  cases Int.natAbs_eq j with
+  | inl h_eq =>
+    rwa [← zpow_ofNat, ← h_eq]
+  | inr h_eq =>
+    rw [← neg_eq_iff_eq_neg] at h_eq
+    rwa [← zpow_ofNat, ← h_eq, zpow_neg, smul_eq_iff_eq_inv_smul, inv_inv, eq_comm]
 
 /-- If for some `n`, `m ^ n • a = a`, then `0 < period m a`. -/
 @[to_additive]
@@ -59,7 +91,6 @@ theorem period_eq_one_of_fixed {m : M} {a : α} (fixed : m • a = a) : period m
   rw [Nat.lt_add_left_iff_pos]
   exact period_pos_of_fixed Nat.one_pos fixed
 
-
 /-- For any non-zero `n` less than the period, `a` is moved by `m^n`. -/
 @[to_additive]
 theorem moved_of_lt_period {m : M} {a : α} {n : ℕ} (n_pos : 0 < n) (n_lt_period : n < period m a) :
@@ -67,6 +98,23 @@ theorem moved_of_lt_period {m : M} {a : α} {n : ℕ} (n_pos : 0 < n) (n_lt_peri
   intro a_fixed
   apply Nat.not_le.mpr n_lt_period
   exact period_le_of_fixed n_pos a_fixed
+
+/-!
+If `g ^ i • x = g ^ j • x` (resp. `(i • g) +ᵥ x = (j • g) +ᵥ x`), then `period g x` divides `i - j`.
+If the action of `g` on `x` is aperiodic, then this is equivalent to say that `i = j`.
+-/
+
+@[to_additive]
+theorem smul_zpow_eq_of_period_dvd {g : G} {x : α} {i j : ℤ} :
+    g ^ i • x = g ^ j • x ↔ (period g x : ℤ) ∣ i - j := by
+  rw [eq_comm, smul_eq_iff_eq_inv_smul, eq_comm, ← mul_smul, ← zpow_neg, ← zpow_add, add_comm,
+    ← sub_eq_add_neg, zpow_smul_eq_iff_period_dvd]
+
+@[to_additive]
+theorem smul_pow_eq_of_period_dvd {g : G} {x : α} {n m : ℕ} :
+    g ^ n • x = g ^ m • x ↔ period g x ∣ Int.natAbs (↑n - ↑m) := by
+  rw [← zpow_ofNat, ← zpow_ofNat, smul_zpow_eq_of_period_dvd, ← dvd_abs, ← Int.coe_natAbs,
+    Int.ofNat_dvd]
 
 section MonoidExponent
 
