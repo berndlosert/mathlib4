@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jeremy Avigad, Robert Y. Lewis
 -/
 import Mathlib.Data.Nat.Order.Basic
+import Mathlib.Data.Int.Order.Basic
 
 #align_import algebra.group_power.lemmas from "leanprover-community/mathlib"@"a07d750983b94c530ab69a726862c2ab6802b38c"
 
@@ -20,6 +21,22 @@ universe u v w x y z u₁ u₂
 
 variable {α : Type*} {M : Type u} {N : Type v} {G : Type w} {H : Type x} {A : Type y} {B : Type z}
   {R : Type u₁} {S : Type u₂}
+
+section Group
+
+variable [Group G]
+
+@[to_additive (attr := simp) abs_zsmul_eq_zero_iff]
+theorem zpow_abs_eq_one_iff (a : G) (i : ℤ) : a ^ |i| = 1 ↔ a ^ i = 1 := by
+  cases abs_cases i with
+  | inl h => rw [h.1]
+  | inr h => rw [h.1, zpow_neg, inv_eq_one]
+
+@[to_additive (attr := simp) natAbs_nsmul_eq_zero_iff]
+theorem pow_natAbs_eq_one_iff (a : G) (i : ℤ) : a ^ Int.natAbs i = 1 ↔ a ^ i = 1 := by
+  rw [← zpow_ofNat, Int.coe_natAbs, zpow_abs_eq_one_iff]
+
+end Group
 
 section OrderedSemiring
 
