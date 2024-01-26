@@ -6,6 +6,16 @@ Authors: David Loeffler
 import Mathlib.NumberTheory.ZetaFunctions.AbstractFuncEq
 import Mathlib.NumberTheory.ModularForms.JacobiTheta.TwoVariable
 
+/-!
+# Hurwitz zeta functions
+
+In this file we study the function `ζ(a, b, s)`, for `a, b ∈ ℝ` and `s ∈ ℂ`, which is the
+meromorphic continuation of the Dirichlet series (convergent for `1 < Re s`)
+
+`∑' (n : ℤ), exp (2 * I * π * b * n) / |n + a| ^ s`
+
+where the term for `n = -a` is understood as `0` omitted if `a ∈ ℤ`.
+-/
 noncomputable section
 
 open Complex Filter Topology Asymptotics Real Set

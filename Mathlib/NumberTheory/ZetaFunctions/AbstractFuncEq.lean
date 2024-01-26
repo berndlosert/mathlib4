@@ -67,10 +67,19 @@ variable (E : Type*) [NormedAddCommGroup E] [NormedSpace ℂ E] [CompleteSpace E
 /-- A structure designed to hold the hypotheses for the Mellin-functional-equation argument
 (most general version: rapid decay at `∞` up to constant terms) -/
 structure WeakFEPair where
-  (f g : ℝ → E) (hf_int : LocallyIntegrableOn f (Ioi 0)) (hg_int : LocallyIntegrableOn g (Ioi 0))
-  (k : ℝ) (hk : 0 < k) (ε : ℂ) (hε : ε ≠ 0)
-  (h_feq : ∀ x ∈ Ioi 0, f (1 / x) = (ε * ↑(x ^ k)) • g x)
+  /-- The functions whose Mellin transform we study -/
+  (f g : ℝ → E)
+  /-- Weight (exponent in the functional equation) -/
+  (k : ℝ)
+  /-- Root number -/
+  (ε : ℂ)
+  /-- Constant terms at `∞` -/
   (f₀ g₀ : E)
+  (hf_int : LocallyIntegrableOn f (Ioi 0))
+  (hg_int : LocallyIntegrableOn g (Ioi 0))
+  (hk : 0 < k)
+  (hε : ε ≠ 0)
+  (h_feq : ∀ x ∈ Ioi 0, f (1 / x) = (ε * ↑(x ^ k)) • g x)
   (hf_top (r : ℝ) : (f · - f₀) =O[atTop] (· ^ (-r)))
   (hg_top (r : ℝ) : (g · - g₀) =O[atTop] (· ^ (-r)))
 
@@ -221,12 +230,13 @@ variable (P : WeakFEPair E)
 -/
 
 /-- Piecewise modified version of `f` with optimal asymptotics. We deliberately choose intervals
-which don't quite join up, so the function is `0` at `x = √N`, in order to maintain symmetry. -/
+which don't quite join up, so the function is `0` at `x = 1`, in order to maintain symmetry;
+there is no `good` choice of value at `1`. -/
 def f_mod : ℝ → E :=
   (Ioi 1).indicator (fun x ↦ P.f x - P.f₀) +
   (Ioo 0 1).indicator (fun x ↦ P.f x - (P.ε * ↑(x ^ (-P.k))) • P.g₀)
 
--- Piecewise modified version of `g` with optimal asymptotics. -/
+/-- Piecewise modified version of `g` with optimal asymptotics. -/
 def g_mod : ℝ → E :=
   (Ioi 1).indicator (fun x ↦ P.g x - P.g₀) +
   (Ioo 0 1).indicator (fun x ↦ P.g x - (P.ε⁻¹ * ↑(x ^ (-P.k))) • P.f₀)
