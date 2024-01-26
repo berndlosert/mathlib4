@@ -297,6 +297,7 @@ end asymp
 
 section FEPair
 
+/-- A `WeakFEPair` structure with `f = hurwitzZetaKernel a b` and `g = hurwitzZetaKernel b (-a)`. -/
 def hurwitzFEPair (a b : ℝ) : WeakFEPair ℂ where
   hf_int := (continuousOn_hurwitzZetaKernelEven a b).locallyIntegrableOn measurableSet_Ioi
   hg_int := (continuousOn_hurwitzZetaKernelEven b (-a)).locallyIntegrableOn measurableSet_Ioi
