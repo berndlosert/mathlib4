@@ -159,6 +159,12 @@ theorem fixedPoints_subgroup_antitone : Antitone fun P : Subgroup G => fixedPoin
   (fixingSubgroup_fixedPoints_gc G α).monotone_u.dual_left
 #align fixed_points_subgroup_antitone fixedPoints_subgroup_antitone
 
+@[simp]
+theorem fixingSubgroup_empty : G•[(∅ : Set α)] = ⊤ := by
+  ext g
+  simp_rw [mem_fixingSubgroup_iff, Set.mem_empty_iff_false, IsEmpty.forall_iff, implies_true,
+    Subgroup.mem_top]
+
 variable {α}
 
 /-- Fixing subgroup of union is intersection -/
@@ -228,9 +234,10 @@ variable [FaithfulSMul G α]
 
 @[simp]
 theorem fixingSubgroup_univ : G•[(Set.univ : Set α)] = ⊥ := by
-  ext x
+  ext g
   rw [Subgroup.mem_bot, mem_fixingSubgroup_iff_subset_fixedBy, Set.univ_subset_iff,
     fixedBy_eq_univ_iff_eq_one]
+
 
 theorem not_mem_fixingSubgroup_compl_of_mem_fixingSubgroup (s : Set α) {g : G} (g_ne_one : g ≠ 1)
     (g_in_subgroup : g ∈ G•[s]) : g ∉ G•[sᶜ] := by
