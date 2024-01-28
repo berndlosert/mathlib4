@@ -404,6 +404,12 @@ lemma Group.one_lt_exponent [Group G] [Finite G] [Nontrivial G] :
   rintro ⟨x, -, hx⟩
   exact (orderOf_pos x).ne' hx
 
+@[to_additive (attr := simp)]
+theorem Subgroup.exponent_top [Group G] : Monoid.exponent (⊤ : Subgroup G) = Monoid.exponent G := by
+  unfold Monoid.exponent Monoid.ExponentExists
+  simp only [top_toSubmonoid, Subtype.forall, mem_top, SubmonoidClass.mk_pow, mk_eq_one_iff,
+    forall_true_left]
+
 end Group
 
 section CommGroup
