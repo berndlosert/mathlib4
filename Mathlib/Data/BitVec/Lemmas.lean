@@ -5,6 +5,7 @@ Authors: Simon Hudon, Harun Khan
 -/
 
 import Mathlib.Data.BitVec.Defs
+import Mathlib.Tactic
 
 /-!
 # Basic Theorems About Bitvectors
@@ -198,12 +199,127 @@ lemma toFin_ofNat (n : ℕ) :
 end
 
 /-!
+### Distributivity of `Std.BitVec.toNat`
+-/
+
+section
+variable (x y : BitVec w)
+open BitVec (toNat)
+
+@[simp] lemma toNat_and : (x &&& y).toNat = x.toNat &&& y.toNat := rfl
+@[simp] lemma toNat_or  : (x ||| y).toNat = x.toNat ||| y.toNat := rfl
+@[simp] lemma toNat_xor : (x ^^^ y).toNat = x.toNat ^^^ y.toNat := rfl
+
+/- `Std.BitVec.toNat_add` and `Std.BitVec.toNat_zero` already exists in Std -/
+attribute [simp] Std.BitVec.toNat_add
+
+lemma toNat_mul : (x * y).toNat = (x.toNat * y.toNat) % 2 ^ w           := rfl
+lemma toNat_sub : (x - y).toNat = (x.toNat + (2 ^ w - y.toNat)) % 2 ^ w := rfl
+
+lemma toNat_neg : (-x).toNat = (2 ^ w - x.toNat) % 2 ^ w := by
+  simp only [Neg.neg, BitVec.neg, BitVec.sub_eq, toNat_sub, ofNat_eq_ofNat, toNat_zero, zero_add]
+
+lemma toNat_natCast (n : ℕ) : toNat (n : BitVec w) = n % 2 ^ w := by
+  rw [toNat, toFin_natCast, Fin.coe_ofNat_eq_mod]
+
+end
+
+/-!
 ### `IntCast`
 -/
 
--- Either of these follows trivially from the other. Which one to
--- prove is not yet clear.
-proof_wanted ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = z
+@[simp] lemma natCast_eq (x w : Nat) :
+    (x : BitVec w) = x#w := by
+  rfl
+
+-- lemma ones_xor_eq_minus (x : BitVec w) :
+--     (pred <| 1 <<< w)
+
+
+-- lemma sub_mod' (a b n : Nat) (h : b ≤ a): (a - b) % n = a % n - b %n := sorry
+
+lemma not_eq_sub (x : BitVec w) :
+    ~~~x = (2^w - 1)#w - x := by
+  sorry
+
+#eval ~~~(0#0)
+#eval (2^0 - 1)
+
+-- private lemma Nat.rearrange_1 (a b c : Nat) : (a - b) + c = a
+
+theorem Nat.sub_mod_left {n x : Nat} (hx : x > 0) : (n - x) % n = n - x := by
+  rcases n with _ | n <;> simp
+  apply Nat.sub_lt <;> linarith
+
+theorem Nat.sub_mod_left' {n x : Nat}  : (n - x) % n = if x = 0 then 0 else n - x := by
+  split_ifs with h
+  . subst h; simp
+  . apply Nat.sub_mod_left; rcases x with zero | succ
+    · contradiction
+    · simp
+
+theorem Nat.gt_zero_of_neq_zero {x : Nat} (h : x ≠ 0) : x > 0 := by
+  rcases x with rfl | x <;> simp at h ⊢
+
+
+theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = z := by
+  apply toNat_inj.mp
+  simp only [toNat_ofFin, Int.cast, IntCast.intCast, BitVec.ofInt]
+  unfold Int.castDef
+  cases' z with z z
+  · simp only [Fin.val_nat_cast, toNat_ofNat]
+  · simp only [Nat.cast, NatCast.natCast, Fin.ofNat''_eq_cast, Fin.coe_neg, Fin.val_nat_cast,
+      not_eq_sub, toNat_sub, toNat_ofNat, mod_add_mod]
+    rw [Nat.add_mod]
+    cases w
+    case zero =>
+      simp
+    case succ w' =>
+      have hx : z % 2 ^ (succ w') < 2 ^ (succ w') := Nat.mod_lt _ (by simp)
+      generalize z % 2^(succ w') = x at *
+      have hone : 1 < 2^ (succ w') := by simp
+      rw [Nat.mod_eq_of_lt (a := 1) hone, Nat.sub_mod_left']
+      conv =>
+        rhs
+        rw [Nat.add_mod, Nat.sub_mod_left (hx := by simp), Nat.sub_mod_left']
+      split_ifs with hz hz' hz3
+      . exfalso
+        rw [hz'] at hz
+        simp at hz
+        rw [Nat.mod_eq_of_lt (a := 1) hone] at hz
+        contradiction
+      . obtain rfl : x = (2^succ w') - 1 := by
+          rw [← Nat.dvd_iff_mod_eq_zero] at hz
+          obtain ⟨k, hz⟩ := hz
+          rcases k with rfl | rfl | ⟨k⟩
+          · contradiction
+          · symm
+            rw [Nat.sub_eq_of_eq_add]
+            simpa only [Nat.zero_eq, Nat.mul_one] using hz.symm
+          · exfalso
+            have ha : z % 2 ^ succ w' < 2 ^ succ w' := Nat.mod_lt _ (by simp)
+            have hb : 1 < 2 ^ succ w' := by simp
+            have hc : z % 2 ^ succ w' + 1 < 2 * (2 ^ succ w') := by
+              simp only [Nat.two_mul]
+              apply Nat.add_lt_add ha hb
+            have hd : 2 ^ succ w' * succ (succ k) >= 2 * (2 ^ succ w') := by
+              rw [Nat.mul_comm]
+              simp
+              linarith
+            linarith
+        simp
+      · simp only [hz3, zero_add, _root_.add_zero, Nat.mod_eq_of_lt hone,
+          Nat.sub_mod_left zero_lt_one]
+      · -- have : x ≠ 2 ^ (succ w') - 1 := sorry
+        have hxs : (x + 1) % 2 ^ (succ w') = x + 1 := sorry
+        obtain h2 : 2 ^ succ w' - 1 + (2 ^ succ w' - x) = (2 * 2 ^ succ w') - (x + 1) := sorry
+        rw [hxs, h2, two_mul, Nat.add_sub_assoc]
+        rw [Nat.add_mod]
+        simp
+        rw [Nat.sub_mod_left]
+        linarith
+        linarith
+
 
 proof_wanted toFin_intCast (z : ℤ) : toFin (z : BitVec w) = z
 
