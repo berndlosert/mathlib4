@@ -40,8 +40,8 @@ theorem nhdsWithin_punctured_prod_neBot_iff {p : α} {q : β} : Filter.NeBot (�
     | inr h => right; exact ⟨h.right⟩
   · intro h
     cases h with
-    | inl h => left; exact ⟨h.ne, (nhds_neBot (a := q)).ne⟩
-    | inr h => right; exact ⟨(nhds_neBot (a := p)).ne, h.ne⟩
+    | inl h => left; exact ⟨h.ne, (nhds_neBot (x := q)).ne⟩
+    | inr h => right; exact ⟨(nhds_neBot (x := p)).ne, h.ne⟩
 
 variable (α β) in
 instance NoIsolatedPoints.prod_left [NoIsolatedPoints α] : NoIsolatedPoints (α × β) where
