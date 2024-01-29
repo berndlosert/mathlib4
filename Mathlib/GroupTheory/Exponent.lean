@@ -117,6 +117,15 @@ theorem exponent_eq_zero_of_order_zero {g : G} (hg : orderOf g = 0) : exponent G
 #align monoid.exponent_eq_zero_of_order_zero Monoid.exponent_eq_zero_of_order_zero
 #align add_monoid.exponent_eq_zero_of_order_zero AddMonoid.exponent_eq_zero_addOrder_zero
 
+/--
+The exponent is zero iff for all nonzero `n`, one can find a `g` such that `g ^ n ≠ 1`.
+-/
+@[to_additive]
+theorem exponent_eq_zero_iff_forall_pow_ne_one : exponent G = 0 ↔ ∀ n > 0, ∃ g : G, g ^ n ≠ 1 := by
+  rw [exponent_eq_zero_iff, ExponentExists]
+  push_neg
+  rfl
+
 @[to_additive exponent_nsmul_eq_zero]
 theorem pow_exponent_eq_one (g : G) : g ^ exponent G = 1 := by
   by_cases h : ExponentExists G
