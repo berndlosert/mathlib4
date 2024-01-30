@@ -493,4 +493,9 @@ lemma append_lt {x y n m} (hx : x < 2 ^ n) (hy : y < 2 ^ m) : y <<< n ||| x < 2 
   · rw [add_comm]; apply shiftLeft_lt hy
   · apply lt_of_lt_of_le hx <| pow_le_pow_right (le_succ _) (le_add_right _ _)
 
+theorem bit_add_bit (x y : Nat) (a b : Bool) :
+    (Nat.bit a x) + (Nat.bit b y) = Nat.bit (_root_.xor a b) (x + y + (a && b).toNat) := by
+  simp only [bit_val]
+  cases a <;> cases b <;> simp <;> omega
+
 end Nat
