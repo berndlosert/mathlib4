@@ -236,14 +236,14 @@ lemma not_eq_sub (x : BitVec w) :
     ~~~x = (2^w - 1)#w - x := by
   sorry
 
-theorem Nat.sub_mod_left {n x : Nat} (hx : x > 0) : (n - x) % n = n - x := by
+theorem Nat.sub_mod_left_of_pos {n x : Nat} (hx : x > 0) : (n - x) % n = n - x := by
   rcases n with _ | n <;> simp
   apply Nat.sub_lt <;> linarith
 
-theorem Nat.sub_mod_left' {n x : Nat}  : (n - x) % n = if x = 0 then 0 else n - x := by
+theorem Nat.sub_mod_left {n x : Nat}  : (n - x) % n = if x = 0 then 0 else n - x := by
   split_ifs with h
   . subst h; simp
-  . apply Nat.sub_mod_left; rcases x with zero | succ
+  . apply Nat.sub_mod_left_of_pos; rcases x with zero | succ
     · contradiction
     · simp
 
@@ -267,10 +267,10 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = z := by
       have mod_one : 1 % 2 ^ succ w' = 1 := Nat.mod_eq_of_lt (one_lt_two_pow' w')
       have hx : z % 2 ^ (succ w') < 2 ^ (succ w') := Nat.mod_lt _ (by simp)
       generalize z % 2^(succ w') = x at *
-      rw [mod_one, Nat.sub_mod_left']
+      rw [mod_one, Nat.sub_mod_left]
       conv =>
         rhs
-        rw [Nat.add_mod, Nat.sub_mod_left (hx := by simp), Nat.sub_mod_left']
+        rw [Nat.add_mod, Nat.sub_mod_left_of_pos (hx := by simp), Nat.sub_mod_left]
       split_ifs with hz hz' hz3
       . exfalso
         simp only [hz', zero_add, mod_one, one_ne_zero] at hz
@@ -294,14 +294,14 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = z := by
               linarith
             linarith
         simp
-      · simp only [hz3, zero_add, _root_.add_zero, mod_one, Nat.sub_mod_left zero_lt_one]
+      · simp only [hz3, zero_add, _root_.add_zero, mod_one, Nat.sub_mod_left_of_pos zero_lt_one]
       · -- have : x ≠ 2 ^ (succ w') - 1 := sorry
         have hxs : (x + 1) % 2 ^ (succ w') = x + 1 := sorry
         obtain h2 : 2 ^ succ w' - 1 + (2 ^ succ w' - x) = (2 * 2 ^ succ w') - (x + 1) := sorry
         rw [hxs, h2, two_mul, Nat.add_sub_assoc]
         rw [Nat.add_mod]
         simp
-        rw [Nat.sub_mod_left]
+        rw [Nat.sub_mod_left_of_pos]
         linarith
         linarith
 
