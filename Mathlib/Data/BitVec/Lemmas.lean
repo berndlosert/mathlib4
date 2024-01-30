@@ -277,14 +277,12 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = Int.cast z := by
     · simp only [Fin.val_nat_cast, toNat_ofNat]
     · simp only [Nat.cast, NatCast.natCast, Fin.ofNat''_eq_cast, Fin.coe_neg, Fin.val_nat_cast,
         not_eq_sub, toNat_sub, toNat_ofNat, mod_add_mod]
-      rw [Nat.add_mod]
       have mod_one : 1 % 2 ^ succ w = 1 := Nat.mod_eq_of_lt (one_lt_two_pow' w)
-      have hx : z % 2 ^ (succ w) < 2 ^ (succ w) := Nat.mod_lt _ (by simp)
+      have hx : z % 2 ^ (succ w) < 2 ^ (succ w) := Nat.mod_lt _ (two_pow_pos (succ w))
+      rw [Nat.add_mod, mod_one, Nat.sub_mod_left]
       generalize z % 2^(succ w) = x at *
-      rw [mod_one, Nat.sub_mod_left]
-      conv =>
-        rhs
-        rw [Nat.add_mod, Nat.sub_mod_left_of_pos (hx := by simp), Nat.sub_mod_left]
+      conv_rhs => rw [Nat.add_mod, Nat.sub_mod_left_of_pos (Nat.one_pos), Nat.sub_mod_left]
+
       split_ifs with hz hz' hz3
       . exfalso
         simp only [hz', zero_add, mod_one, one_ne_zero] at hz
