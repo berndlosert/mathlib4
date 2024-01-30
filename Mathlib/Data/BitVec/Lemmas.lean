@@ -291,8 +291,7 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = Int.cast z := by
           obtain ⟨k, hz⟩ := hz
           rcases k with rfl | rfl | ⟨k⟩
           · contradiction
-          · symm
-            rw [Nat.sub_eq_of_eq_add]
+          · rw [Nat.sub_eq_of_eq_add]
             simpa only [Nat.zero_eq, Nat.mul_one] using hz.symm
           · exfalso
             have ha : z % 2 ^ succ w < 2 ^ succ w := Nat.mod_lt _ (by simp)
