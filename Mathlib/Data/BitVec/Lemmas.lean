@@ -5,7 +5,7 @@ Authors: Simon Hudon, Harun Khan
 -/
 
 import Mathlib.Data.BitVec.Defs
-import Mathlib.Tactic
+import Mathlib.Tactic.Linarith
 
 /-!
 # Basic Theorems About Bitvectors
@@ -232,20 +232,9 @@ end
     (x : BitVec w) = x#w := by
   rfl
 
--- lemma ones_xor_eq_minus (x : BitVec w) :
---     (pred <| 1 <<< w)
-
-
--- lemma sub_mod' (a b n : Nat) (h : b ≤ a): (a - b) % n = a % n - b %n := sorry
-
 lemma not_eq_sub (x : BitVec w) :
     ~~~x = (2^w - 1)#w - x := by
   sorry
-
-#eval ~~~(0#0)
-#eval (2^0 - 1)
-
--- private lemma Nat.rearrange_1 (a b c : Nat) : (a - b) + c = a
 
 theorem Nat.sub_mod_left {n x : Nat} (hx : x > 0) : (n - x) % n = n - x := by
   rcases n with _ | n <;> simp
@@ -275,19 +264,16 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = z := by
     case zero =>
       simp
     case succ w' =>
+      have mod_one : 1 % 2 ^ succ w' = 1 := Nat.mod_eq_of_lt (one_lt_two_pow' w')
       have hx : z % 2 ^ (succ w') < 2 ^ (succ w') := Nat.mod_lt _ (by simp)
       generalize z % 2^(succ w') = x at *
-      have hone : 1 < 2^ (succ w') := by simp
-      rw [Nat.mod_eq_of_lt (a := 1) hone, Nat.sub_mod_left']
+      rw [mod_one, Nat.sub_mod_left']
       conv =>
         rhs
         rw [Nat.add_mod, Nat.sub_mod_left (hx := by simp), Nat.sub_mod_left']
       split_ifs with hz hz' hz3
       . exfalso
-        rw [hz'] at hz
-        simp at hz
-        rw [Nat.mod_eq_of_lt (a := 1) hone] at hz
-        contradiction
+        simp only [hz', zero_add, mod_one, one_ne_zero] at hz
       . obtain rfl : x = (2^succ w') - 1 := by
           rw [← Nat.dvd_iff_mod_eq_zero] at hz
           obtain ⟨k, hz⟩ := hz
@@ -308,8 +294,7 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = z := by
               linarith
             linarith
         simp
-      · simp only [hz3, zero_add, _root_.add_zero, Nat.mod_eq_of_lt hone,
-          Nat.sub_mod_left zero_lt_one]
+      · simp only [hz3, zero_add, _root_.add_zero, mod_one, Nat.sub_mod_left zero_lt_one]
       · -- have : x ≠ 2 ^ (succ w') - 1 := sorry
         have hxs : (x + 1) % 2 ^ (succ w') = x + 1 := sorry
         obtain h2 : 2 ^ succ w' - 1 + (2 ^ succ w' - x) = (2 * 2 ^ succ w') - (x + 1) := sorry
