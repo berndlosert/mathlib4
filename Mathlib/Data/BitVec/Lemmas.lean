@@ -246,9 +246,6 @@ instance : Unique (BitVec 0) where
     (x : BitVec w) = x#w := by
   rfl
 
-lemma not_eq_sub (x : BitVec w) :
-    ~~~x = (2^w - 1)#w - x := by
-  sorry
 
 theorem Nat.sub_mod_left_of_pos {n x : Nat} (hx : x > 0) : (n - x) % n = n - x := by
   rcases n with _ | n <;> simp
@@ -264,6 +261,17 @@ theorem Nat.sub_mod_left {n x : Nat}  : (n - x) % n = if x = 0 then 0 else n - x
 theorem Nat.gt_zero_of_neq_zero {x : Nat} (h : x ≠ 0) : x > 0 := by
   rcases x with rfl | x <;> simp at h ⊢
 
+lemma not_eq_sub (x : BitVec w) :
+    ~~~x = (2^w - 1)#w - x := by
+  have hx : BitVec.toNat x < 2^w := toNat_lt x
+  apply BitVec.toNat_inj.mp
+  simp [toNat_not]
+  simp [BitVec.toNat_sub]
+  rw [← Nat.sub_add_comm (by exact one_le_two_pow w)]
+  rw [Nat.add_sub_assoc (by omega)]
+  simp only [add_mod_left]
+  rw [Nat.mod_eq_of_lt (by omega)]
+  rw [Nat.sub_right_comm]
 
 theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = Int.cast z := by
   cases w
@@ -307,15 +315,23 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = Int.cast z := by
         simp
       · simp only [hz3, zero_add, _root_.add_zero, mod_one, Nat.sub_mod_left_of_pos zero_lt_one]
       · -- have : x ≠ 2 ^ (succ w) - 1 := sorry
-        have hxs : (x + 1) % 2 ^ (succ w) = x + 1 := sorry
-        obtain h2 : 2 ^ succ w - 1 + (2 ^ succ w - x) = (2 * 2 ^ succ w) - (x + 1) := sorry
+        have hxs : (x + 1) % 2 ^ (succ w) = x + 1 := by
+          apply Nat.mod_eq_of_lt
+          have := Nat.succ_le_of_lt hx
+          rcases Nat.lt_or_eq_of_le this with h | h
+          · exact h
+          · have h : x + 1 = _ := h
+            simp [h] at hz
+        obtain h2 : 2 ^ succ w - 1 + (2 ^ succ w - x) = (2 * 2 ^ succ w) - (x + 1) := by
+          rw [← Nat.sub_add_comm, two_mul, ← Nat.add_sub_assoc, Nat.sub_sub]
+          · exact Nat.le_of_lt hx
+          · exact one_le_two_pow (succ w)
         rw [hxs, h2, two_mul, Nat.add_sub_assoc]
         rw [Nat.add_mod]
         simp
         rw [Nat.sub_mod_left_of_pos]
         linarith
         linarith
-
 
 proof_wanted toFin_intCast (z : ℤ) : toFin (z : BitVec w) = z
 
