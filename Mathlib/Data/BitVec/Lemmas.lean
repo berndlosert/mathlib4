@@ -222,6 +222,28 @@ lemma toNat_neg : (-x).toNat = (2 ^ w - x.toNat) % 2 ^ w := by
 lemma toNat_natCast (n : ℕ) : toNat (n : BitVec w) = n % 2 ^ w := by
   rw [toNat, toFin_natCast, Fin.coe_ofNat_eq_mod]
 
+private lemma Nat.add_eq_of_eq_sub_of_le (x y z : Nat) (hsub : x = z - y) (hz : z ≥ y) :
+  x + y = z := by exact (eq_tsub_iff_add_eq_of_le hz).mp hsub
+
+private lemma Nat.add_eq_of_eq_sub_of_le' (x y z : Nat) (hadd : x = z + y) :
+  x - y = z := by exact Nat.sub_eq_of_eq_add hadd
+
+
+
+
+@[simp] theorem carry_zero_left_false (w y : Nat) :
+    carry w 0 y false = false := by
+  simpa [carry] using mod_lt _ (two_pow_pos w)
+
+@[simp] theorem carry_zero_right_false (w x : Nat) :
+    carry w x 0 false = false := by
+  simpa [carry] using mod_lt _ (two_pow_pos w)
+
+private theorem Bool.xor_decide (p q : Prop) [Decidable p] [Decidable q] :
+    xor (decide p) (decide q) = decide (Xor' p q) := by
+  rcases Decidable.em p with hp|hp
+  <;> rcases Decidable.em q with hq|hq
+  <;> simp [hp, hq]
 lemma toNat_not : (~~~x).toNat = 2^w - 1 - x.toNat := by
   sorry
 
