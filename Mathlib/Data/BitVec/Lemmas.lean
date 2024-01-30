@@ -222,7 +222,21 @@ lemma toNat_neg : (-x).toNat = (2 ^ w - x.toNat) % 2 ^ w := by
 lemma toNat_natCast (n : ℕ) : toNat (n : BitVec w) = n % 2 ^ w := by
   rw [toNat, toFin_natCast, Fin.coe_ofNat_eq_mod]
 
+lemma toNat_not : (~~~x).toNat = 2^w - 1 - x.toNat := by
+  sorry
+
 end
+
+/-!
+### `Unique`
+There is exactly one zero-width bitvector
+-/
+
+/-- Every zero-width bitvector is equal to the canonical zero-width bitvector `0#0` -/
+theorem eq_ofNat_zero_of_width_zero (x : BitVec 0) : x = 0#0 := eq_of_getMsb_eq (congrFun rfl)
+
+instance : Unique (BitVec 0) where
+  uniq := eq_ofNat_zero_of_width_zero
 
 /-!
 ### `IntCast`
@@ -251,22 +265,22 @@ theorem Nat.gt_zero_of_neq_zero {x : Nat} (h : x ≠ 0) : x > 0 := by
   rcases x with rfl | x <;> simp at h ⊢
 
 
-theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = z := by
-  apply toNat_inj.mp
-  simp only [toNat_ofFin, Int.cast, IntCast.intCast, BitVec.ofInt]
-  unfold Int.castDef
-  cases' z with z z
-  · simp only [Fin.val_nat_cast, toNat_ofNat]
-  · simp only [Nat.cast, NatCast.natCast, Fin.ofNat''_eq_cast, Fin.coe_neg, Fin.val_nat_cast,
-      not_eq_sub, toNat_sub, toNat_ofNat, mod_add_mod]
-    rw [Nat.add_mod]
-    cases w
-    case zero =>
-      simp
-    case succ w' =>
-      have mod_one : 1 % 2 ^ succ w' = 1 := Nat.mod_eq_of_lt (one_lt_two_pow' w')
-      have hx : z % 2 ^ (succ w') < 2 ^ (succ w') := Nat.mod_lt _ (by simp)
-      generalize z % 2^(succ w') = x at *
+theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = Int.cast z := by
+  cases w
+  case zero =>
+    simp only [eq_ofNat_zero_of_width_zero]
+  case succ w =>
+    apply toNat_inj.mp
+    simp only [toNat_ofFin, Int.cast, IntCast.intCast, BitVec.ofInt]
+    unfold Int.castDef
+    cases' z with z z
+    · simp only [Fin.val_nat_cast, toNat_ofNat]
+    · simp only [Nat.cast, NatCast.natCast, Fin.ofNat''_eq_cast, Fin.coe_neg, Fin.val_nat_cast,
+        not_eq_sub, toNat_sub, toNat_ofNat, mod_add_mod]
+      rw [Nat.add_mod]
+      have mod_one : 1 % 2 ^ succ w = 1 := Nat.mod_eq_of_lt (one_lt_two_pow' w)
+      have hx : z % 2 ^ (succ w) < 2 ^ (succ w) := Nat.mod_lt _ (by simp)
+      generalize z % 2^(succ w) = x at *
       rw [mod_one, Nat.sub_mod_left]
       conv =>
         rhs
@@ -274,7 +288,7 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = z := by
       split_ifs with hz hz' hz3
       . exfalso
         simp only [hz', zero_add, mod_one, one_ne_zero] at hz
-      . obtain rfl : x = (2^succ w') - 1 := by
+      . obtain rfl : x = (2^succ w) - 1 := by
           rw [← Nat.dvd_iff_mod_eq_zero] at hz
           obtain ⟨k, hz⟩ := hz
           rcases k with rfl | rfl | ⟨k⟩
@@ -283,21 +297,21 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = z := by
             rw [Nat.sub_eq_of_eq_add]
             simpa only [Nat.zero_eq, Nat.mul_one] using hz.symm
           · exfalso
-            have ha : z % 2 ^ succ w' < 2 ^ succ w' := Nat.mod_lt _ (by simp)
-            have hb : 1 < 2 ^ succ w' := by simp
-            have hc : z % 2 ^ succ w' + 1 < 2 * (2 ^ succ w') := by
+            have ha : z % 2 ^ succ w < 2 ^ succ w := Nat.mod_lt _ (by simp)
+            have hb : 1 < 2 ^ succ w := by simp
+            have hc : z % 2 ^ succ w + 1 < 2 * (2 ^ succ w) := by
               simp only [Nat.two_mul]
               apply Nat.add_lt_add ha hb
-            have hd : 2 ^ succ w' * succ (succ k) >= 2 * (2 ^ succ w') := by
+            have hd : 2 ^ succ w * succ (succ k) >= 2 * (2 ^ succ w) := by
               rw [Nat.mul_comm]
               simp
               linarith
             linarith
         simp
       · simp only [hz3, zero_add, _root_.add_zero, mod_one, Nat.sub_mod_left_of_pos zero_lt_one]
-      · -- have : x ≠ 2 ^ (succ w') - 1 := sorry
-        have hxs : (x + 1) % 2 ^ (succ w') = x + 1 := sorry
-        obtain h2 : 2 ^ succ w' - 1 + (2 ^ succ w' - x) = (2 * 2 ^ succ w') - (x + 1) := sorry
+      · -- have : x ≠ 2 ^ (succ w) - 1 := sorry
+        have hxs : (x + 1) % 2 ^ (succ w) = x + 1 := sorry
+        obtain h2 : 2 ^ succ w - 1 + (2 ^ succ w - x) = (2 * 2 ^ succ w) - (x + 1) := sorry
         rw [hxs, h2, two_mul, Nat.add_sub_assoc]
         rw [Nat.add_mod]
         simp
