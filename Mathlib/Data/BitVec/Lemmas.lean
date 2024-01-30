@@ -6,6 +6,7 @@ Authors: Simon Hudon, Harun Khan
 
 import Mathlib.Data.BitVec.Defs
 import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Ring
 
 /-!
 # Basic Theorems About Bitvectors
@@ -244,10 +245,106 @@ private theorem Bool.xor_decide (p q : Prop) [Decidable p] [Decidable q] :
   rcases Decidable.em p with hp|hp
   <;> rcases Decidable.em q with hq|hq
   <;> simp [hp, hq]
+
+theorem Nat.testBit_add (x y : Nat) (i : Nat) :
+    testBit (x + y) i = Bool.xor (Bool.xor (testBit x i) ((testBit y i))) (carry i x y false) := by
+  clear * -
+  stop
+  suffices ∀ (a b : Bool),
+    testBit (x + (y + Bool.toNat (a && b))) i =
+      _root_.xor (testBit x i) (_root_.xor (testBit y i) (decide
+        (2 ≤
+          (testBit (bit a x) i).toNat
+          + (testBit (bit b y) i).toNat
+          + (carry i (bit a x) (bit b y) false).toNat
+        )))
+  by
+    specialize this false false
+    simp [-bit_false] at this
+    simp [-bit_false, this, Bool.xor_left_inj]
+    have toNat_mod_two_bne_zero (x : Nat) : Bool.toNat (x % 2 != 0) = x % 2 := by
+      rcases Nat.mod_two_eq_zero_or_one x with h|h
+      <;> simp [h]; rfl
+    simp [-bit_false, carry, testBit, bit_val, Nat.shiftRight_eq_div_pow, toNat_mod_two_bne_zero]
+    generalize Htwo_x_upto_i : 2 * x % 2 ^ i = two_x_upto_i
+    generalize Htwo_y_upto_i : 2 * y % 2 ^ i = two_y_upto_i
+    generalize Hx_upto_i : x % 2 ^ i = x_upto_i
+    generalize Hy_upto_i : y % 2 ^ i = y_upto_i
+    generalize Hx_at_i_pred : 2 * x / 2 ^ i % 2 = x_at_i_pred
+    generalize Hy_at_i_pred : 2 * y / 2 ^ i % 2 = y_at_i_pred
+    by_cases h : 2 ^ i ≤ two_x_upto_i + two_y_upto_i <;> simp [h]
+    · simp
+    · simp
+
+  induction i generalizing x y <;> rw [←bit_decomp x, ←bit_decomp y, bit_add_bit]
+  case zero =>
+    simp only [Nat.zero_eq, testBit_zero, carry_zero, Bool.xor_false]
+  case succ i ih =>
+    generalize bodd x = a
+    generalize bodd y = b
+    generalize div2 x = x
+    generalize div2 y = y
+    simp only [add_assoc, testBit_succ, carry_succ, ge_iff_le, Bool.xor_assoc]
+    simp only [ih, Bool.xor_assoc, Bool.xor_left_inj]
+    simp only [carry, Bool.toNat_false, _root_.add_zero, ge_iff_le]
+    have : 2 ^ i ≤ y % 2 ^ i + Bool.toNat (a && b) % 2 ^ i
+          ↔ (i ≠ 0 ∧ y % 2 ^ i = 2 ^ i - 1 ∧ a && b) := by
+      have := mod_lt y (two_pow_pos i)
+      cases a && b
+      · simpa
+      · cases' i with i
+        · simp [Nat.mod_one]
+        · simp [Nat.mod_eq_of_lt]
+          rcases Decidable.em (y % 2 ^ (succ i) = 2 ^ (succ i) - 1) with h|h
+          · simp [h, Nat.sub_add_cancel (one_le_two_pow _)]
+          · simp [h]
+    simp [this, testBit_bool_to_nat, Bool.xor_decide]
+    cases i
+    case zero =>
+      simp [Nat.mod_one]
+      obtain rfl : a = true := sorry
+      obtain rfl : b = true := sorry
+      simp
+    case succ i =>
+      simp
+    cases a <;> cases b
+    · sorry
+    · sorry
+    · sorry
+    · sorry
+    -- cases i <;> rw [←bit_decomp x, ←bit_decomp y, bit_add_bit]
+    -- · simp only [Nat.zero_eq, testBit_zero, testBit_bool_to_nat, decide_True, Bool.true_and,
+    --     carry_zero, Bool.xor_false, Bool.xor_assoc, Bool.toNat_false, _root_.add_zero,
+    --     Bool.xor_left_inj]
+    --   cases a <;> cases b <;> rfl
+    -- · simp [testBit_succ]
+
+
+        -- . simp [carry_succ, testBit_succ]
+
+
+-- theorem getLsb_add (x y : BitVec w) (i : Nat) :
+--     (x + y).getLsb i
+--     = Bool.xor (Bool.xor (x.getLsb i) ((y.getLsb i))) (carry i x.toNat y.toNat false) := by
+--   -- rw [add_as_adc]
+--   simp
+--   induction i
+--   case zero =>
+--     rfl
+
+/-
+toNat (~~~x) = 2 ^ w - 1 - toNat x
+= toNat (~~~x) + toNat x = 2 ^ w - 1
+= 0b11111.... = 2^w - 1
+= <proof>
+-/
 lemma toNat_not : (~~~x).toNat = 2^w - 1 - x.toNat := by
+  symm
+  apply Nat.sub_eq_of_eq_add
+  simp only [Complement.complement, BitVec.not, toNat_xor, toNat_ofFin]
   sorry
 
-end
+  end
 
 /-!
 ### `Unique`
