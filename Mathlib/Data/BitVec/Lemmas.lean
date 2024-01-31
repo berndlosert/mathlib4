@@ -224,7 +224,7 @@ lemma toNat_natCast (n : ℕ) : toNat (n : BitVec w) = n % 2 ^ w := by
   rw [toNat, toFin_natCast, Fin.coe_ofNat_eq_mod]
 
 /-- An alternative unfolding of `(x - y).toNat`. If we know that `y ≤ x`, then we know the naive translation to `Nat`-subtraction does not truncate -/
-lemma toNat_sub_of_le (x y : BitVec w) (h : y ≤ x) :
+lemma toNat_sub_of_le {x y : BitVec w} (h : y ≤ x) :
     (x - y).toNat = x.toNat - y.toNat := by
   change y.toNat ≤ x.toNat at h
   rw [toNat_sub, ← Nat.add_sub_assoc (le_of_lt <| toNat_lt y), add_comm,
@@ -244,6 +244,10 @@ lemma toNat_sub_of_le (x y : BitVec w) (h : y ≤ x) :
     ]
 end
 
+theorem sub_eq_add_not (x y : BitVec w) :
+    x - y = x + ~~~y + 1 := by
+  simp [← toNat_inj, toNat_sub, Complement.complement, BitVec.not]
+
 /-!
 ## Theorems about `Std.BitVec.concat`
 -/
@@ -251,6 +255,32 @@ end
 @[simp] lemma concat_xor_concat (xs ys : BitVec w) (x y : Bool) :
     concat xs x ^^^ concat ys y = concat (xs ^^^ ys) (xor x y) := by
   simp [← toNat_inj]
+
+-- private lemma Nat.bit_sub_bit (a b : Bool) (x y : Nat) :
+--     bit a x - bit b y = bit (xor a b) (x - y - (!a && b).toNat) := by
+--   sorry
+
+-- lemma concat_false_le_concat_true (xs ys : BitVec w) :
+--     concat xs false ≤ concat ys true := by
+--   show (concat xs false).toNat ≤ (concat ys true).toNat
+--   simp only [toNat_concat, bit_val]
+
+-- @[simp] lemma negOne_sub_concat (xs ys : BitVec w) (y : Bool) :
+--     (-1) - concat ys y = concat ((-1) - ys) (!y) := by
+--   cases y
+--   case false =>
+--     simp [← toNat_inj]
+--   -- simp [ -bit_true, -bit_false]
+--   -- rw [Nat.mul_mod]
+--   -- conv_lhs => {
+--   --   arg 1
+--   --   arg 1
+--   --   rw [← Nat.sub_add_comm]
+--   -- }
+
+-- lemma concat_sub_concat (xs ys : BitVec w) (x y : Bool) :
+--     concat xs x - concat ys y = concat (xs - ys - (zeroExtend _ <| .ofBool (!x && y))) (xor x y) := by
+--   simp [← toNat_inj]
 
 @[simp] lemma not_concat (msbs : BitVec w) (lsb : Bool) :
     ~~~(concat msbs lsb) = concat (~~~msbs) (!lsb) := by
@@ -271,6 +301,17 @@ lemma ule_negOne (x : BitVec w) : BitVec.ule x (-1) := by
 /-- `-1` is the supremum of `BitVec w` with `≤` -/
 lemma le_negOne (x : BitVec w) : x ≤ (-1) := by
   simpa only [BitVec.ule, LE.le, decide_eq_true_eq] using ule_negOne x
+
+/-!
+## CommSemiring
+-/
+
+-- TODO: generalize to `CommRing` after `ofFin_intCast` is proven
+instance : CommSemiring (BitVec w) :=
+  toFin_injective.commSemiring _
+    toFin_zero toFin_one toFin_add toFin_mul (Function.swap toFin_nsmul)
+    toFin_pow toFin_natCast
+
 
 /-
 ## TO BE ORGANIZED
@@ -382,8 +423,6 @@ private theorem Bool.xor_decide (p q : Prop) [Decidable p] [Decidable q] :
 --   case zero =>
 --     rfl
 
-#check concat
-
 @[elab_as_elim]
 def induction {motive : ∀ {w}, BitVec w → Sort*}
     (zero : motive 0#0)
@@ -391,14 +430,11 @@ def induction {motive : ∀ {w}, BitVec w → Sort*}
     ∀ {w} (x : BitVec w), motive x := by
   sorry
 
+@[simp] lemma add_neg (x : BitVec w) : x + -x = 0 := by
+  sorry
+
 lemma negOne_sub_eq_not (x : BitVec w) : -1 - x = ~~~x := by
-  stop
-  simp only [ofNat_eq_ofNat, Complement.complement, BitVec.not]
-  induction x using induction
-  case zero =>
-    rfl
-  case concat w msbs lsb ih =>
-    simp
+  rw [sub_eq_add_not, add_comm, ← add_assoc, add_neg, zero_add]
 
 /-
 toNat (~~~x) = 2 ^ w - 1 - toNat x
@@ -409,7 +445,7 @@ toNat (~~~x) = 2 ^ w - 1 - toNat x
 lemma toNat_not (x : BitVec w) : (~~~x).toNat = 2^w - 1 - x.toNat := by
   symm
   have : (2^w - 1) = (-1 : BitVec w).toNat := sorry
-  rw [this, ← toNat_sub_of_le _ _ (le_negOne x), negOne_sub_eq_not]
+  rw [this, ← toNat_sub_of_le (le_negOne x), negOne_sub_eq_not]
 
 /-!
 ### `Unique`
@@ -498,8 +534,7 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = Int.cast z := by
             linarith
         simp
       · simp only [hz3, zero_add, _root_.add_zero, mod_one, Nat.sub_mod_left_of_pos zero_lt_one]
-      · -- have : x ≠ 2 ^ (succ w) - 1 := sorry
-        have hxs : (x + 1) % 2 ^ (succ w) = x + 1 := by
+      · have hxs : (x + 1) % 2 ^ (succ w) = x + 1 := by
           apply Nat.mod_eq_of_lt
           have := Nat.succ_le_of_lt hx
           rcases Nat.lt_or_eq_of_le this with h | h
@@ -518,15 +553,5 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = Int.cast z := by
         linarith
 
 proof_wanted toFin_intCast (z : ℤ) : toFin (z : BitVec w) = z
-
-/-!
-## Ring
--/
-
--- TODO: generalize to `CommRing` after `ofFin_intCast` is proven
-instance : CommSemiring (BitVec w) :=
-  toFin_injective.commSemiring _
-    toFin_zero toFin_one toFin_add toFin_mul (Function.swap toFin_nsmul)
-    toFin_pow toFin_natCast
 
 end Std.BitVec
