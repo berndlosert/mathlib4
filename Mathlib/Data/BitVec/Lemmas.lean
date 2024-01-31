@@ -223,14 +223,64 @@ lemma toNat_neg : (-x).toNat = (2 ^ w - x.toNat) % 2 ^ w := by
 lemma toNat_natCast (n : ℕ) : toNat (n : BitVec w) = n % 2 ^ w := by
   rw [toNat, toFin_natCast, Fin.coe_ofNat_eq_mod]
 
-private lemma Nat.add_eq_of_eq_sub_of_le (x y z : Nat) (hsub : x = z - y) (hz : z ≥ y) :
-  x + y = z := by exact (eq_tsub_iff_add_eq_of_le hz).mp hsub
+/-- An alternative unfolding of `(x - y).toNat`. If we know that `y ≤ x`, then we know the naive translation to `Nat`-subtraction does not truncate -/
+lemma toNat_sub_of_le (x y : BitVec w) (h : y ≤ x) :
+    (x - y).toNat = x.toNat - y.toNat := by
+  change y.toNat ≤ x.toNat at h
+  rw [toNat_sub, ← Nat.add_sub_assoc (le_of_lt <| toNat_lt y), add_comm,
+    Nat.add_sub_assoc h, add_mod, mod_self, zero_add, mod_mod]
+  apply mod_eq_of_lt <| tsub_lt_of_lt (x.toNat_lt)
+
+@[simp] lemma toNat_concat (msbs : BitVec w) (lsb : Bool) :
+    toNat (concat msbs lsb) = Nat.bit lsb msbs.toNat := by
+  simp only [concat, HAppend.hAppend, append, shiftLeftZeroExtend, toNat_or, toNat_ofFin,
+    toNat_zeroExtend', toNat_ofBool, bit_val, Nat.shiftLeft_eq, Nat.pow_one, mul_comm]
+  cases lsb
+  · simp
+  · simp [
+      -bit_false, -bit_true, bit_add_bit,
+      show 2 * msbs.toNat = bit false msbs.toNat by simp [bit_val],
+      show 1 = bit true 0 from rfl,
+    ]
+end
+
+/-!
+## Theorems about `Std.BitVec.concat`
+-/
+
+@[simp] lemma concat_xor_concat (xs ys : BitVec w) (x y : Bool) :
+    concat xs x ^^^ concat ys y = concat (xs ^^^ ys) (xor x y) := by
+  simp [← toNat_inj]
+
+@[simp] lemma not_concat (msbs : BitVec w) (lsb : Bool) :
+    ~~~(concat msbs lsb) = concat (~~~msbs) (!lsb) := by
+  conv_lhs => simp [Complement.complement, BitVec.not]
+  have (h) :
+      have h' := sorry
+      ofFin (w:=w+1) ⟨pred (1 <<< (w + 1)), h⟩ = concat (ofFin ⟨(pred (1 <<< w)), h'⟩) true := by
+    sorry
+  simp [this]
+  rfl
+
+
+/-- `-1` is the supremum of `BitVec w` with unsigned less-equal -/
+lemma ule_negOne (x : BitVec w) : BitVec.ule x (-1) := by
+  -- simp only [BitVec.ule, LE.le, decide_eq_true_eq]
+  sorry
+
+/-- `-1` is the supremum of `BitVec w` with `≤` -/
+lemma le_negOne (x : BitVec w) : x ≤ (-1) := by
+  simpa only [BitVec.ule, LE.le, decide_eq_true_eq] using ule_negOne x
+
+/-
+## TO BE ORGANIZED
+-/
+
+-- private lemma Nat.add_eq_of_eq_sub_of_le (x y z : Nat) (hsub : x = z - y) (hz : z ≥ y) :
+--   x + y = z := by exact (eq_tsub_iff_add_eq_of_le hz).mp hsub
 
 private lemma Nat.add_eq_of_eq_sub_of_le' (x y z : Nat) (hadd : x = z + y) :
   x - y = z := by exact Nat.sub_eq_of_eq_add hadd
-
-
-
 
 @[simp] theorem carry_zero_left_false (w y : Nat) :
     carry w 0 y false = false := by
@@ -341,7 +391,7 @@ def induction {motive : ∀ {w}, BitVec w → Sort*}
     ∀ {w} (x : BitVec w), motive x := by
   sorry
 
-lemma negOne_sub_eq_not : -1 - x = ~~~x := by
+lemma negOne_sub_eq_not (x : BitVec w) : -1 - x = ~~~x := by
   stop
   simp only [ofNat_eq_ofNat, Complement.complement, BitVec.not]
   induction x using induction
@@ -350,54 +400,16 @@ lemma negOne_sub_eq_not : -1 - x = ~~~x := by
   case concat w msbs lsb ih =>
     simp
 
-@[simp] lemma not_concat (msbs : BitVec w) (lsb : Bool) :
-    ~~~(concat msbs lsb) = concat (~~~msbs) (!lsb) := by
-  sorry
-
-@[simp] lemma toNat_concat (msbs : BitVec w) (lsb : Bool) :
-    toNat (concat msbs lsb) = Nat.bit lsb msbs.toNat := by
-  simp only [concat, HAppend.hAppend, append, shiftLeftZeroExtend, toNat_or, toNat_ofFin,
-    toNat_zeroExtend', toNat_ofBool, bit_val, Nat.shiftLeft_eq, Nat.pow_one, mul_comm]
-  cases lsb
-  · simp
-  · simp [
-      -bit_false, -bit_true, bit_add_bit,
-      show 2 * msbs.toNat = bit false msbs.toNat by simp [bit_val],
-      show 1 = bit true 0 from rfl,
-    ]
-
-
-/-- An alternative unfolding of `(x - y).toNat`. If we know that `y ≤ x`, then we know the naive
-translation to `Nat`-subtraction does not truncate -/
-lemma toNat_sub_of_le (x y : BitVec w) (h : y ≤ x) :
-    (x - y).toNat = x.toNat - y.toNat := by
-  change y.toNat ≤ x.toNat at h
-  rw [toNat_sub, ← Nat.add_sub_assoc (le_of_lt <| toNat_lt y), add_comm,
-    Nat.add_sub_assoc h, add_mod, mod_self, zero_add, mod_mod]
-  apply mod_eq_of_lt <| tsub_lt_of_lt (x.toNat_lt)
-
-/-- `-1` is the supremum of `BitVec w` with unsigned less-equal -/
-lemma ule_negOne (x : BitVec w) : BitVec.ule x (-1) := by
-  -- simp only [BitVec.ule, LE.le, decide_eq_true_eq]
-  sorry
-
-/-- `-1` is the supremum of `BitVec w` with `≤` -/
-lemma le_negOne (x : BitVec w) : x ≤ (-1) := by
-  simpa only [BitVec.ule, LE.le, decide_eq_true_eq] using ule_negOne x
-
 /-
 toNat (~~~x) = 2 ^ w - 1 - toNat x
 = toNat (~~~x) + toNat x = 2 ^ w - 1
 = 0b11111.... = 2^w - 1
 = <proof>
 -/
-lemma toNat_not : (~~~x).toNat = 2^w - 1 - x.toNat := by
-  clear y
+lemma toNat_not (x : BitVec w) : (~~~x).toNat = 2^w - 1 - x.toNat := by
   symm
   have : (2^w - 1) = (-1 : BitVec w).toNat := sorry
   rw [this, ← toNat_sub_of_le _ _ (le_negOne x), negOne_sub_eq_not]
-
-end
 
 /-!
 ### `Unique`
