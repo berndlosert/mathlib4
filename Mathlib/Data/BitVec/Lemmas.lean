@@ -7,6 +7,7 @@ Authors: Simon Hudon, Harun Khan
 import Mathlib.Data.BitVec.Defs
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
+import Mathlib.Tactic.Abel
 
 /-!
 # Basic Theorems About Bitvectors
@@ -244,9 +245,20 @@ lemma toNat_sub_of_le {x y : BitVec w} (h : y ≤ x) :
     ]
 end
 
-theorem sub_eq_add_not (x y : BitVec w) :
-    x - y = x + ~~~y + 1 := by
-  simp [← toNat_inj, toNat_sub, Complement.complement, BitVec.not]
+-- theorem sub_eq_add_not (x y : BitVec w) :
+--     x - y = x + ~~~y + 1 := by
+--   simp [← toNat_inj, toNat_sub, Complement.complement, BitVec.not]
+
+/-!
+### `Unique`
+There is exactly one zero-width bitvector
+-/
+
+/-- Every zero-width bitvector is equal to the canonical zero-width bitvector `0#0` -/
+theorem eq_ofNat_zero_of_width_zero (x : BitVec 0) : x = 0#0 := eq_of_getMsb_eq (congrFun rfl)
+
+instance : Unique (BitVec 0) where
+  uniq := eq_ofNat_zero_of_width_zero
 
 /-!
 ## Theorems about `Std.BitVec.concat`
@@ -311,6 +323,10 @@ instance : CommSemiring (BitVec w) :=
   toFin_injective.commSemiring _
     toFin_zero toFin_one toFin_add toFin_mul (Function.swap toFin_nsmul)
     toFin_pow toFin_natCast
+
+instance : AddCommGroup (BitVec w) :=
+  toFin_injective.addCommGroup _
+    toFin_zero toFin_add toFin_neg toFin_sub (Function.swap toFin_nsmul) (Function.swap toFin_zsmul)
 
 
 /-
@@ -423,50 +439,6 @@ private theorem Bool.xor_decide (p q : Prop) [Decidable p] [Decidable q] :
 --   case zero =>
 --     rfl
 
-@[elab_as_elim]
-def induction {motive : ∀ {w}, BitVec w → Sort*}
-    (zero : motive 0#0)
-    (concat : ∀ {w} (msbs : BitVec w) (lsb : Bool), motive msbs → motive (concat msbs lsb)) :
-    ∀ {w} (x : BitVec w), motive x := by
-  sorry
-
-@[simp] lemma add_neg (x : BitVec w) : x + -x = 0 := by
-  sorry
-
-lemma negOne_sub_eq_not (x : BitVec w) : -1 - x = ~~~x := by
-  rw [sub_eq_add_not, add_comm, ← add_assoc, add_neg, zero_add]
-
-/-
-toNat (~~~x) = 2 ^ w - 1 - toNat x
-= toNat (~~~x) + toNat x = 2 ^ w - 1
-= 0b11111.... = 2^w - 1
-= <proof>
--/
-lemma toNat_not (x : BitVec w) : (~~~x).toNat = 2^w - 1 - x.toNat := by
-  symm
-  have : (2^w - 1) = (-1 : BitVec w).toNat := sorry
-  rw [this, ← toNat_sub_of_le (le_negOne x), negOne_sub_eq_not]
-
-/-!
-### `Unique`
-There is exactly one zero-width bitvector
--/
-
-/-- Every zero-width bitvector is equal to the canonical zero-width bitvector `0#0` -/
-theorem eq_ofNat_zero_of_width_zero (x : BitVec 0) : x = 0#0 := eq_of_getMsb_eq (congrFun rfl)
-
-instance : Unique (BitVec 0) where
-  uniq := eq_ofNat_zero_of_width_zero
-
-/-!
-### `IntCast`
--/
-
-@[simp] lemma natCast_eq (x w : Nat) :
-    (x : BitVec w) = x#w := by
-  rfl
-
-
 theorem Nat.sub_mod_left_of_pos {n x : Nat} (hx : x > 0) : (n - x) % n = n - x := by
   rcases n with _ | n <;> simp
   apply Nat.sub_lt <;> linarith
@@ -480,6 +452,105 @@ theorem Nat.sub_mod_left {n x : Nat}  : (n - x) % n = if x = 0 then 0 else n - x
 
 theorem Nat.gt_zero_of_neq_zero {x : Nat} (h : x ≠ 0) : x > 0 := by
   rcases x with rfl | x <;> simp at h ⊢
+
+
+@[elab_as_elim]
+def inductionOn {motive : ∀ {w}, BitVec w → Sort*}
+    (zero : motive 0#0)
+    (concat : ∀ {w} (msbs : BitVec w) (lsb : Bool), motive msbs → motive (concat msbs lsb)) :
+    ∀ {w} (x : BitVec w), motive x := by
+  sorry
+
+@[elab_as_elim]
+def inductionOn₂ {motive : ∀ {w}, BitVec w → BitVec w → Sort*}
+    (zero : motive 0#0 0#0)
+    (concat : ∀ {w} (msbs₁ : BitVec w) (lsb₁ : Bool) (msbs₂ : BitVec w) (lsb₂ : Bool),
+      motive msbs₁ msbs₂ → motive (concat msbs₁ lsb₁) (concat msbs₂ lsb₂)) :
+    ∀ {w} (x y : BitVec w), motive x y := by
+  intro w x y
+  induction x using inductionOn
+  case zero =>
+    rw [Unique.uniq _ y]; exact zero
+  case concat w xs x ih =>
+    cases y using inductionOn
+    case concat _ ys y _ =>
+      apply concat
+      apply ih
+
+-- lemma concat_adc_concat (xs ys : BitVec w) (x y c : Bool) :
+--     (concat xs x) + (concat ys y) =
+--     let out := (adc xs ys (at_least_two_true x y c));
+--       (out.1, concat out.2 (Bool.xor (Bool.xor x y) c)) := by
+--   simp only [Bool.xor_assoc, adc]
+--   rw [iunfoldr_replace]
+
+#check Fin.hIterate
+
+lemma concat_adc_concat (xs ys : BitVec w) (x y c : Bool) :
+    adc (concat xs x) (concat ys y) c =
+    let out := (adc xs ys (adcb x y c).1);
+      (out.1, concat out.2 (adcb x y c).2) := by
+  simp only [Bool.xor_assoc, adc, iunfoldr]
+  rw [iunfoldr_replace (fun
+      | 0   => c
+      | i+1 => carry i xs.toNat ys.toNat (adcb x y c).1
+    ) (
+      concat (iunfoldr (fun i c ↦ adcb (getLsb xs ↑i) (getLsb ys ↑i) c) (adcb x y c).1).2
+        (adcb x y c).2
+    )]
+  · simp []
+    rw [iunfoldr.fst_eq]
+  · rfl
+  -- nth_rw 2 [iunfoldr_replace]
+  -- nth_rw 1 [iunfoldr_replace]
+  -- simp
+
+
+
+  induction xs, ys using inductionOn₂
+  case zero =>
+    cases x <;> cases y <;> cases c <;> rfl
+  case concat w msbs₁ lsb₁ msbs₂ lsb₂ ih =>
+    simp
+    -- simp [adc]
+    -- rw [ih]
+    sorry
+
+lemma add_not_self (x : BitVec w) : x + ~~~x = -1 := by
+  rw [add_as_adc, adc, iunfoldr_replace (fun _ => false) (-1)]
+  · rfl
+  · intro i
+    simp [adcb]
+
+
+lemma negOne_sub_eq_not (x : BitVec w) : -1 - x = ~~~x := by
+  rw [← add_not_self x]; abel
+
+
+lemma negOne_toNat : (-1 : BitVec w).toNat = 2^w - 1 := by
+  simp [Neg.neg, BitVec.neg, toNat_sub]
+  cases' w with w
+  · rfl
+  · rw [mod_eq_of_lt (a:=1) (by simp), mod_eq_of_lt (sub_lt (two_pow_pos _) Nat.one_pos)]
+
+/-
+toNat (~~~x) = 2 ^ w - 1 - toNat x
+= toNat (~~~x) + toNat x = 2 ^ w - 1
+= 0b11111.... = 2^w - 1
+= <proof>
+-/
+lemma toNat_not (x : BitVec w) : (~~~x).toNat = 2^w - 1 - x.toNat := by
+  rw [← negOne_toNat, ← toNat_sub_of_le (le_negOne x), negOne_sub_eq_not]
+
+/-!
+### `IntCast`
+-/
+
+@[simp] lemma natCast_eq (x w : Nat) :
+    (x : BitVec w) = x#w := by
+  rfl
+
+
 
 lemma not_eq_sub (x : BitVec w) :
     ~~~x = (2^w - 1)#w - x := by
