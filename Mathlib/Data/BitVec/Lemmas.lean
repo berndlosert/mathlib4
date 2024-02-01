@@ -263,49 +263,8 @@ instance : Unique (BitVec 0) where
   uniq := eq_ofNat_zero_of_width_zero
 
 /-!
-## Theorems about `Std.BitVec.concat`
+## Ordering
 -/
-
-@[simp] lemma concat_xor_concat (xs ys : BitVec w) (x y : Bool) :
-    concat xs x ^^^ concat ys y = concat (xs ^^^ ys) (xor x y) := by
-  simp [← toNat_inj]
-
--- private lemma Nat.bit_sub_bit (a b : Bool) (x y : Nat) :
---     bit a x - bit b y = bit (xor a b) (x - y - (!a && b).toNat) := by
---   sorry
-
--- lemma concat_false_le_concat_true (xs ys : BitVec w) :
---     concat xs false ≤ concat ys true := by
---   show (concat xs false).toNat ≤ (concat ys true).toNat
---   simp only [toNat_concat, bit_val]
-
--- @[simp] lemma negOne_sub_concat (xs ys : BitVec w) (y : Bool) :
---     (-1) - concat ys y = concat ((-1) - ys) (!y) := by
---   cases y
---   case false =>
---     simp [← toNat_inj]
---   -- simp [ -bit_true, -bit_false]
---   -- rw [Nat.mul_mod]
---   -- conv_lhs => {
---   --   arg 1
---   --   arg 1
---   --   rw [← Nat.sub_add_comm]
---   -- }
-
--- lemma concat_sub_concat (xs ys : BitVec w) (x y : Bool) :
---     concat xs x - concat ys y = concat (xs - ys - (zeroExtend _ <| .ofBool (!x && y))) (xor x y) := by
---   simp [← toNat_inj]
-
-@[simp] lemma not_concat (msbs : BitVec w) (lsb : Bool) :
-    ~~~(concat msbs lsb) = concat (~~~msbs) (!lsb) := by
-  conv_lhs => simp [Complement.complement, BitVec.not]
-  have (h) :
-      have h' := sorry
-      ofFin (w:=w+1) ⟨pred (1 <<< (w + 1)), h⟩ = concat (ofFin ⟨(pred (1 <<< w)), h'⟩) true := by
-    sorry
-  simp [this]
-  rfl
-
 
 /-- `-1` is the supremum of `BitVec w` with unsigned less-equal -/
 lemma ule_negOne (x : BitVec w) : BitVec.ule x (-1) := by
@@ -428,26 +387,6 @@ end
 ## TO BE ORGANIZED
 -/
 
--- private lemma Nat.add_eq_of_eq_sub_of_le (x y z : Nat) (hsub : x = z - y) (hz : z ≥ y) :
---   x + y = z := by exact (eq_tsub_iff_add_eq_of_le hz).mp hsub
-
-private lemma Nat.add_eq_of_eq_sub_of_le' (x y z : Nat) (hadd : x = z + y) :
-  x - y = z := by exact Nat.sub_eq_of_eq_add hadd
-
-@[simp] theorem carry_zero_left_false (w y : Nat) :
-    carry w 0 y false = false := by
-  simpa [carry] using mod_lt _ (two_pow_pos w)
-
-@[simp] theorem carry_zero_right_false (w x : Nat) :
-    carry w x 0 false = false := by
-  simpa [carry] using mod_lt _ (two_pow_pos w)
-
-private theorem Bool.xor_decide (p q : Prop) [Decidable p] [Decidable q] :
-    xor (decide p) (decide q) = decide (Xor' p q) := by
-  rcases Decidable.em p with hp|hp
-  <;> rcases Decidable.em q with hq|hq
-  <;> simp [hp, hq]
-
 theorem Nat.sub_mod_left_of_pos {n x : Nat} (hx : x > 0) : (n - x) % n = n - x := by
   rcases n with _ | n <;> simp
   apply Nat.sub_lt <;> linarith
@@ -462,6 +401,7 @@ theorem Nat.sub_mod_left {n x : Nat}  : (n - x) % n = if x = 0 then 0 else n - x
 theorem Nat.gt_zero_of_neq_zero {x : Nat} (h : x ≠ 0) : x > 0 := by
   rcases x with rfl | x <;> simp at h ⊢
 
+/-- Adding a bitvector to its own complement yields the all ones bitpattern -/
 lemma add_not_self (x : BitVec w) : x + ~~~x = -1 := by
   rw [add_as_adc, adc, iunfoldr_replace (fun _ => false) (-1)]
   · rfl
@@ -470,19 +410,12 @@ lemma add_not_self (x : BitVec w) : x + ~~~x = -1 := by
 lemma negOne_sub_eq_not (x : BitVec w) : -1 - x = ~~~x := by
   rw [← add_not_self x]; abel
 
-
 lemma negOne_toNat : (-1 : BitVec w).toNat = 2^w - 1 := by
   simp [Neg.neg, BitVec.neg, toNat_sub]
   cases' w with w
   · rfl
   · rw [mod_eq_of_lt (a:=1) (by simp), mod_eq_of_lt (sub_lt (two_pow_pos _) Nat.one_pos)]
 
-/-
-toNat (~~~x) = 2 ^ w - 1 - toNat x
-= toNat (~~~x) + toNat x = 2 ^ w - 1
-= 0b11111.... = 2^w - 1
-= <proof>
--/
 lemma toNat_not (x : BitVec w) : (~~~x).toNat = 2^w - 1 - x.toNat := by
   rw [← negOne_toNat, ← toNat_sub_of_le (le_negOne x), negOne_sub_eq_not]
 
