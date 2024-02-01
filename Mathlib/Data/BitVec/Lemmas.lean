@@ -247,9 +247,11 @@ lemma toNat_sub_of_le {x y : BitVec w} (h : y ≤ x) :
     ]
 end
 
--- theorem sub_eq_add_not (x y : BitVec w) :
---     x - y = x + ~~~y + 1 := by
---   simp [← toNat_inj, toNat_sub, Complement.complement, BitVec.not]
+@[simp] lemma toNat_neg_ofNat_one : (-1#w : BitVec w).toNat = 2^w - 1 := by
+  simp only [ofNat_eq_ofNat, toNat_neg, toNat_ofNat]
+  cases' w with w
+  · rfl
+  · rw [mod_eq_of_lt (a:=1) (by simp), mod_eq_of_lt (sub_lt (two_pow_pos _) Nat.one_pos)]
 
 /-!
 ### `Unique`
@@ -267,13 +269,13 @@ instance : Unique (BitVec 0) where
 -/
 
 /-- `-1` is the supremum of `BitVec w` with unsigned less-equal -/
-lemma ule_negOne (x : BitVec w) : BitVec.ule x (-1) := by
+lemma ule_neg_ofNat_one (x : BitVec w) : BitVec.ule x (-1#w) := by
   -- simp only [BitVec.ule, LE.le, decide_eq_true_eq]
   sorry
 
-/-- `-1` is the supremum of `BitVec w` with `≤` -/
-lemma le_negOne (x : BitVec w) : x ≤ (-1) := by
-  simpa only [BitVec.ule, LE.le, decide_eq_true_eq] using ule_negOne x
+/-- `-1#w` is the supremum of `BitVec w` with `≤` -/
+lemma le_neg_ofNat_one (x : BitVec w) : x ≤ (-1#w) := by
+  simpa only [BitVec.ule, LE.le, decide_eq_true_eq] using ule_neg_ofNat_one x
 
 /-!
 ## CommSemiring
@@ -398,26 +400,21 @@ theorem Nat.sub_mod_left {n x : Nat}  : (n - x) % n = if x = 0 then 0 else n - x
     · contradiction
     · simp
 
-theorem Nat.gt_zero_of_neq_zero {x : Nat} (h : x ≠ 0) : x > 0 := by
-  rcases x with rfl | x <;> simp at h ⊢
-
 /-- Adding a bitvector to its own complement yields the all ones bitpattern -/
-lemma add_not_self (x : BitVec w) : x + ~~~x = -1 := by
-  rw [add_as_adc, adc, iunfoldr_replace (fun _ => false) (-1)]
+@[simp] lemma add_not_self (x : BitVec w) : x + ~~~x = -1#w := by
+  rw [add_as_adc, adc, iunfoldr_replace (fun _ => false) (-1#w)]
   · rfl
   · simp [adcb]
 
-lemma negOne_sub_eq_not (x : BitVec w) : -1 - x = ~~~x := by
+lemma negOne_sub_eq_not (x : BitVec w) : -1#w - x = ~~~x := by
   rw [← add_not_self x]; abel
 
-lemma negOne_toNat : (-1 : BitVec w).toNat = 2^w - 1 := by
-  simp [Neg.neg, BitVec.neg, toNat_sub]
-  cases' w with w
-  · rfl
-  · rw [mod_eq_of_lt (a:=1) (by simp), mod_eq_of_lt (sub_lt (two_pow_pos _) Nat.one_pos)]
-
 lemma toNat_not (x : BitVec w) : (~~~x).toNat = 2^w - 1 - x.toNat := by
-  rw [← negOne_toNat, ← toNat_sub_of_le (le_negOne x), negOne_sub_eq_not]
+  rw [← toNat_neg_ofNat_one, ← toNat_sub_of_le (le_neg_ofNat_one x), negOne_sub_eq_not]
+
+-- theorem sub_eq_add_not (x y : BitVec w) :
+--     x - y = x + ~~~y + 1 := by
+--   simp [← toNat_inj, toNat_sub, Complement.complement, BitVec.not]
 
 /-!
 ### `IntCast`
