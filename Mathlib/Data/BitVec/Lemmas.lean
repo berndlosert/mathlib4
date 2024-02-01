@@ -349,7 +349,8 @@ variable (x y : BitVec w) (i : Fin w)
 @[simp] lemma getLsb'_ofNat_zero : getLsb' 0#w i = false := by
   simp only [getLsb', getLsb, toNat_ofNat, zero_mod, zero_testBit]
 
-@[simp] lemma getLsb'_neg_ofNat_one : getLsb' (-1#w) i = true := sorry
+@[simp] lemma getLsb'_neg_ofNat_one : getLsb' (-1#w) i = true := by
+  simp [getLsb', getLsb]
 
 @[simp] lemma getLsb_val_eq_getLsb' : x.getLsb i.val = x.getLsb' i := rfl
 
@@ -379,7 +380,8 @@ variable (x y : BitVec w) (i : Fin w)
 @[simp] lemma getMsb'_ofNat_zero : getMsb' 0#w i = false := by
   simp only [← getLsb'_rev, getLsb'_ofNat_zero]
 
-proof_wanted getMsb'_negOne : getMsb' (-1) i = true
+@[simp] lemma  getMsb'_neg_ofNat_one : getMsb' (-1#w) i = true := by
+  simp only [← getLsb'_rev, getLsb'_neg_ofNat_one]
 
 @[simp] lemma getMsb_val_eq_getMsb' : x.getMsb i.val = x.getMsb' i := rfl
 
