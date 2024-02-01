@@ -226,33 +226,6 @@ lemma toNat_neg : (-x).toNat = (2 ^ w - x.toNat) % 2 ^ w := by
 lemma toNat_natCast (n : ℕ) : toNat (n : BitVec w) = n % 2 ^ w := by
   rw [toNat, toFin_natCast, Fin.coe_ofNat_eq_mod]
 
-end
-
-/-!
-### `IntCast`
--- >>>>>>> origin/bitvec-ext
--/
-
-section
-variable (x y : BitVec w)
-open BitVec (toNat)
-
-@[simp] lemma toNat_and : (x &&& y).toNat = x.toNat &&& y.toNat := rfl
-@[simp] lemma toNat_or  : (x ||| y).toNat = x.toNat ||| y.toNat := rfl
-@[simp] lemma toNat_xor : (x ^^^ y).toNat = x.toNat ^^^ y.toNat := rfl
-
-/- `Std.BitVec.toNat_add` and `Std.BitVec.toNat_zero` already exists in Std -/
-attribute [simp] Std.BitVec.toNat_add
-
-lemma toNat_mul : (x * y).toNat = (x.toNat * y.toNat) % 2 ^ w           := rfl
-lemma toNat_sub : (x - y).toNat = (x.toNat + (2 ^ w - y.toNat)) % 2 ^ w := rfl
-
-lemma toNat_neg : (-x).toNat = (2 ^ w - x.toNat) % 2 ^ w := by
-  simp only [Neg.neg, BitVec.neg, BitVec.sub_eq, toNat_sub, ofNat_eq_ofNat, toNat_zero, zero_add]
-
-lemma toNat_natCast (n : ℕ) : toNat (n : BitVec w) = n % 2 ^ w := by
-  rw [toNat, toFin_natCast, Fin.coe_ofNat_eq_mod]
-
 /-- An alternative unfolding of `(x - y).toNat`. If we know that `y ≤ x`, then we know the naive translation to `Nat`-subtraction does not truncate -/
 lemma toNat_sub_of_le {x y : BitVec w} (h : y ≤ x) :
     (x - y).toNat = x.toNat - y.toNat := by
@@ -357,6 +330,99 @@ instance : AddCommGroup (BitVec w) :=
   toFin_injective.addCommGroup _
     toFin_zero toFin_add toFin_neg toFin_sub (Function.swap toFin_nsmul) (Function.swap toFin_zsmul)
 
+/-!
+## Extensionality
+-/
+
+/-- If two bitvectors agree on all in-bound bits, then they agree on all bits -/
+private lemma getLsb_eq_of_getLsb' {x y : BitVec w} (h : ∀ (i : Fin w), x.getLsb' i = y.getLsb' i) :
+    ∀ (i : ℕ), x.getLsb i = y.getLsb i := by
+  simp only [getLsb, testBit]
+  intro i
+  cases' lt_or_le i w with hi hi
+  · exact h ⟨i, hi⟩
+  · have (z : BitVec w) : z.toNat < 2 ^ i :=
+      Nat.lt_of_lt_of_le z.toNat_lt (pow_le_pow_right (le_succ 1) hi)
+    rw [Nat.shiftRight_eq_zero_iff_lt.mpr (this x), Nat.shiftRight_eq_zero_iff_lt.mpr (this y)]
+
+/-- If two bitvectors agree on all bits, then they are equal. See also `Std.BitVec.ext_msb` -/
+@[ext]
+theorem ext_lsb {x y : BitVec w} (h : ∀ i, x.getLsb' i = y.getLsb' i) : x = y := by
+  apply toNat_inj.mp
+  apply Nat.eq_of_testBit_eq
+  simp only [testBit_toNat]
+  exact getLsb_eq_of_getLsb' h
+
+theorem getLsb'_rev (x : BitVec w) (i : Fin w) :
+    x.getLsb' i.rev = x.getMsb' i := by
+  simp [getMsb', getMsb, getLsb', tsub_add_eq_tsub_tsub_swap]
+
+theorem getMsb'_rev (x : BitVec w) (i : Fin w) :
+    x.getMsb' i.rev = x.getLsb' i := by
+  rw [← getLsb'_rev, Fin.rev_involutive]
+
+/-- If two bitvectors agree on all bits, then they are equal. See also `Std.BitVec.ext_lsb` -/
+theorem ext_msb {x y : BitVec w} (h : ∀ i, x.getMsb' i = y.getMsb' i) : x = y := by
+  ext i; simpa [← getLsb'_rev] using h i.rev
+
+/-!
+### Distributivity of `Std.BitVec.getLsb'`
+-/
+
+section
+variable (x y : BitVec w) (i : Fin w)
+
+@[simp] lemma getLsb'_and : (x &&& y).getLsb' i = (x.getLsb' i && y.getLsb' i) := by
+  simp only [getLsb', getLsb, toNat_and, testBit_land]
+
+@[simp] lemma getLsb'_or : (x ||| y).getLsb' i = (x.getLsb' i || y.getLsb' i) := by
+  simp only [getLsb', getLsb, toNat_or, testBit_lor]
+
+@[simp] lemma getLsb'_xor : (x ^^^ y).getLsb' i = (xor (x.getLsb' i) (y.getLsb' i)) := by
+  simp only [getLsb', getLsb, toNat_xor, testBit_xor]
+
+@[simp] lemma getLsb'_not : (~~~x).getLsb' i = !(x.getLsb' i) := by
+  simp only [getLsb', getLsb, Complement.complement, BitVec.not, toNat_xor, toNat_ofFin,
+    testBit_xor, Nat.testBit_ones, Fin.is_lt, decide_True, Bool.true_xor]
+
+@[simp] lemma getLsb'_ofNat_zero : getLsb' 0#w i = false := by
+  simp only [getLsb', getLsb, toNat_ofNat, zero_mod, zero_testBit]
+
+@[simp] lemma getLsb'_neg_ofNat_one : getLsb' (-1#w) i = true := sorry
+
+@[simp] lemma getLsb_val_eq_getLsb' : x.getLsb i.val = x.getLsb' i := rfl
+
+end
+
+
+
+/-!
+### Distributivity of `Std.BitVec.getMsb'`
+-/
+
+section
+variable (x y : BitVec w) (i : Fin w)
+
+@[simp] lemma getMsb'_and : (x &&& y).getMsb' i = (x.getMsb' i && y.getMsb' i) := by
+  simp only [← getLsb'_rev, getLsb'_and]
+
+@[simp] lemma getMsb'_or : (x ||| y).getMsb' i = (x.getMsb' i || y.getMsb' i) := by
+  simp only [← getLsb'_rev, getLsb'_or]
+
+@[simp] lemma getMsb'_xor : (x ^^^ y).getMsb' i = (xor (x.getMsb' i) (y.getMsb' i)) := by
+  simp only [← getLsb'_rev, getLsb'_xor]
+
+@[simp] lemma getMsb'_not : (~~~x).getMsb' i = !(x.getMsb' i) := by
+  simp only [← getLsb'_rev, getLsb'_not]
+
+@[simp] lemma getMsb'_ofNat_zero : getMsb' 0#w i = false := by
+  simp only [← getLsb'_rev, getLsb'_ofNat_zero]
+
+proof_wanted getMsb'_negOne : getMsb' (-1) i = true
+
+@[simp] lemma getMsb_val_eq_getMsb' : x.getMsb i.val = x.getMsb' i := rfl
+
+end
 
 /-
 ## TO BE ORGANIZED
@@ -382,92 +448,6 @@ private theorem Bool.xor_decide (p q : Prop) [Decidable p] [Decidable q] :
   <;> rcases Decidable.em q with hq|hq
   <;> simp [hp, hq]
 
--- theorem Nat.testBit_add (x y : Nat) (i : Nat) :
---     testBit (x + y) i = Bool.xor (Bool.xor (testBit x i) ((testBit y i))) (carry i x y false) := by
---   clear * -
---   stop
---   suffices ∀ (a b : Bool),
---     testBit (x + (y + Bool.toNat (a && b))) i =
---       _root_.xor (testBit x i) (_root_.xor (testBit y i) (decide
---         (2 ≤
---           (testBit (bit a x) i).toNat
---           + (testBit (bit b y) i).toNat
---           + (carry i (bit a x) (bit b y) false).toNat
---         )))
---   by
---     specialize this false false
---     simp [-bit_false] at this
---     simp [-bit_false, this, Bool.xor_left_inj]
---     have toNat_mod_two_bne_zero (x : Nat) : Bool.toNat (x % 2 != 0) = x % 2 := by
---       rcases Nat.mod_two_eq_zero_or_one x with h|h
---       <;> simp [h]; rfl
---     simp [-bit_false, carry, testBit, bit_val, Nat.shiftRight_eq_div_pow, toNat_mod_two_bne_zero]
---     generalize Htwo_x_upto_i : 2 * x % 2 ^ i = two_x_upto_i
---     generalize Htwo_y_upto_i : 2 * y % 2 ^ i = two_y_upto_i
---     generalize Hx_upto_i : x % 2 ^ i = x_upto_i
---     generalize Hy_upto_i : y % 2 ^ i = y_upto_i
---     generalize Hx_at_i_pred : 2 * x / 2 ^ i % 2 = x_at_i_pred
---     generalize Hy_at_i_pred : 2 * y / 2 ^ i % 2 = y_at_i_pred
---     by_cases h : 2 ^ i ≤ two_x_upto_i + two_y_upto_i <;> simp [h]
---     · simp
---     · simp
-
---   induction i generalizing x y <;> rw [←bit_decomp x, ←bit_decomp y, bit_add_bit]
---   case zero =>
---     simp only [Nat.zero_eq, testBit_zero, carry_zero, Bool.xor_false]
---   case succ i ih =>
---     generalize bodd x = a
---     generalize bodd y = b
---     generalize div2 x = x
---     generalize div2 y = y
---     simp only [add_assoc, testBit_succ, carry_succ, ge_iff_le, Bool.xor_assoc]
---     simp only [ih, Bool.xor_assoc, Bool.xor_left_inj]
---     simp only [carry, Bool.toNat_false, _root_.add_zero, ge_iff_le]
---     have : 2 ^ i ≤ y % 2 ^ i + Bool.toNat (a && b) % 2 ^ i
---           ↔ (i ≠ 0 ∧ y % 2 ^ i = 2 ^ i - 1 ∧ a && b) := by
---       have := mod_lt y (two_pow_pos i)
---       cases a && b
---       · simpa
---       · cases' i with i
---         · simp [Nat.mod_one]
---         · simp [Nat.mod_eq_of_lt]
---           rcases Decidable.em (y % 2 ^ (succ i) = 2 ^ (succ i) - 1) with h|h
---           · simp [h, Nat.sub_add_cancel (one_le_two_pow _)]
---           · simp [h]
---     simp [this, testBit_bool_to_nat, Bool.xor_decide]
---     cases i
---     case zero =>
---       simp [Nat.mod_one]
---       obtain rfl : a = true := sorry
---       obtain rfl : b = true := sorry
---       simp
---     case succ i =>
---       simp
---     cases a <;> cases b
---     · sorry
---     · sorry
---     · sorry
---     · sorry
---     -- cases i <;> rw [←bit_decomp x, ←bit_decomp y, bit_add_bit]
---     -- · simp only [Nat.zero_eq, testBit_zero, testBit_bool_to_nat, decide_True, Bool.true_and,
---     --     carry_zero, Bool.xor_false, Bool.xor_assoc, Bool.toNat_false, _root_.add_zero,
---     --     Bool.xor_left_inj]
---     --   cases a <;> cases b <;> rfl
---     -- · simp [testBit_succ]
-
-
---         -- . simp [carry_succ, testBit_succ]
-
-
--- theorem getLsb_add (x y : BitVec w) (i : Nat) :
---     (x + y).getLsb i
---     = Bool.xor (Bool.xor (x.getLsb i) ((y.getLsb i))) (carry i x.toNat y.toNat false) := by
---   -- rw [add_as_adc]
---   simp
---   induction i
---   case zero =>
---     rfl
-
 theorem Nat.sub_mod_left_of_pos {n x : Nat} (hx : x > 0) : (n - x) % n = n - x := by
   rcases n with _ | n <;> simp
   apply Nat.sub_lt <;> linarith
@@ -482,75 +462,10 @@ theorem Nat.sub_mod_left {n x : Nat}  : (n - x) % n = if x = 0 then 0 else n - x
 theorem Nat.gt_zero_of_neq_zero {x : Nat} (h : x ≠ 0) : x > 0 := by
   rcases x with rfl | x <;> simp at h ⊢
 
-
-@[elab_as_elim]
-def inductionOn {motive : ∀ {w}, BitVec w → Sort*}
-    (zero : motive 0#0)
-    (concat : ∀ {w} (msbs : BitVec w) (lsb : Bool), motive msbs → motive (concat msbs lsb)) :
-    ∀ {w} (x : BitVec w), motive x := by
-  sorry
-
-@[elab_as_elim]
-def inductionOn₂ {motive : ∀ {w}, BitVec w → BitVec w → Sort*}
-    (zero : motive 0#0 0#0)
-    (concat : ∀ {w} (msbs₁ : BitVec w) (lsb₁ : Bool) (msbs₂ : BitVec w) (lsb₂ : Bool),
-      motive msbs₁ msbs₂ → motive (concat msbs₁ lsb₁) (concat msbs₂ lsb₂)) :
-    ∀ {w} (x y : BitVec w), motive x y := by
-  intro w x y
-  induction x using inductionOn
-  case zero =>
-    rw [Unique.uniq _ y]; exact zero
-  case concat w xs x ih =>
-    cases y using inductionOn
-    case concat _ ys y _ =>
-      apply concat
-      apply ih
-
--- lemma concat_adc_concat (xs ys : BitVec w) (x y c : Bool) :
---     (concat xs x) + (concat ys y) =
---     let out := (adc xs ys (at_least_two_true x y c));
---       (out.1, concat out.2 (Bool.xor (Bool.xor x y) c)) := by
---   simp only [Bool.xor_assoc, adc]
---   rw [iunfoldr_replace]
-
-#check Fin.hIterate
-
-lemma concat_adc_concat (xs ys : BitVec w) (x y c : Bool) :
-    adc (concat xs x) (concat ys y) c =
-    let out := (adc xs ys (adcb x y c).1);
-      (out.1, concat out.2 (adcb x y c).2) := by
-  simp only [Bool.xor_assoc, adc, iunfoldr]
-  rw [iunfoldr_replace (fun
-      | 0   => c
-      | i+1 => carry i xs.toNat ys.toNat (adcb x y c).1
-    ) (
-      concat (iunfoldr (fun i c ↦ adcb (getLsb xs ↑i) (getLsb ys ↑i) c) (adcb x y c).1).2
-        (adcb x y c).2
-    )]
-  · simp []
-    rw [iunfoldr.fst_eq]
-  · rfl
-  -- nth_rw 2 [iunfoldr_replace]
-  -- nth_rw 1 [iunfoldr_replace]
-  -- simp
-
-
-
-  induction xs, ys using inductionOn₂
-  case zero =>
-    cases x <;> cases y <;> cases c <;> rfl
-  case concat w msbs₁ lsb₁ msbs₂ lsb₂ ih =>
-    simp
-    -- simp [adc]
-    -- rw [ih]
-    sorry
-
 lemma add_not_self (x : BitVec w) : x + ~~~x = -1 := by
   rw [add_as_adc, adc, iunfoldr_replace (fun _ => false) (-1)]
   · rfl
-  · intro i
-    simp [adcb]
-
+  · simp [adcb]
 
 lemma negOne_sub_eq_not (x : BitVec w) : -1 - x = ~~~x := by
   rw [← add_not_self x]; abel
@@ -574,12 +489,6 @@ lemma toNat_not (x : BitVec w) : (~~~x).toNat = 2^w - 1 - x.toNat := by
 /-!
 ### `IntCast`
 -/
-
-@[simp] lemma natCast_eq (x w : Nat) :
-    (x : BitVec w) = x#w := by
-  rfl
-
-
 
 lemma not_eq_sub (x : BitVec w) :
     ~~~x = (2^w - 1)#w - x := by
@@ -653,94 +562,5 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = Int.cast z := by
         linarith
 
 proof_wanted toFin_intCast (z : ℤ) : toFin (z : BitVec w) = z
--- =======
-/-!
-## Extensionality
--/
-
-/-- If two bitvectors agree on all in-bound bits, then they agree on all bits -/
-private lemma getLsb_eq_of_getLsb' {x y : BitVec w} (h : ∀ (i : Fin w), x.getLsb' i = y.getLsb' i) :
-    ∀ (i : ℕ), x.getLsb i = y.getLsb i := by
-  simp only [getLsb, testBit]
-  intro i
-  cases' lt_or_le i w with hi hi
-  · exact h ⟨i, hi⟩
-  · have (z : BitVec w) : z.toNat < 2 ^ i :=
-      Nat.lt_of_lt_of_le z.toNat_lt (pow_le_pow_right (le_succ 1) hi)
-    rw [Nat.shiftRight_eq_zero_iff_lt.mpr (this x), Nat.shiftRight_eq_zero_iff_lt.mpr (this y)]
-
-/-- If two bitvectors agree on all bits, then they are equal. See also `Std.BitVec.ext_msb` -/
-@[ext]
-theorem ext_lsb {x y : BitVec w} (h : ∀ i, x.getLsb' i = y.getLsb' i) : x = y := by
-  apply toNat_inj.mp
-  apply Nat.eq_of_testBit_eq
-  simp only [testBit_toNat]
-  exact getLsb_eq_of_getLsb' h
-
-theorem getLsb'_rev (x : BitVec w) (i : Fin w) :
-    x.getLsb' i.rev = x.getMsb' i := by
-  simp [getMsb', getMsb, getLsb', tsub_add_eq_tsub_tsub_swap]
-
-theorem getMsb'_rev (x : BitVec w) (i : Fin w) :
-    x.getMsb' i.rev = x.getLsb' i := by
-  rw [← getLsb'_rev, Fin.rev_involutive]
-
-/-- If two bitvectors agree on all bits, then they are equal. See also `Std.BitVec.ext_lsb` -/
-theorem ext_msb {x y : BitVec w} (h : ∀ i, x.getMsb' i = y.getMsb' i) : x = y := by
-  ext i; simpa [← getLsb'_rev] using h i.rev
-
-/-!
-### Distributivity of `Std.BitVec.getLsb'`
--/
-
-section
-variable (x y : BitVec w) (i : Fin w)
-
-@[simp] lemma getLsb'_and : (x &&& y).getLsb' i = (x.getLsb' i && y.getLsb' i) := by
-  simp only [getLsb', getLsb, toNat_and, testBit_land]
-
-@[simp] lemma getLsb'_or : (x ||| y).getLsb' i = (x.getLsb' i || y.getLsb' i) := by
-  simp only [getLsb', getLsb, toNat_or, testBit_lor]
-
-@[simp] lemma getLsb'_xor : (x ^^^ y).getLsb' i = (xor (x.getLsb' i) (y.getLsb' i)) := by
-  simp only [getLsb', getLsb, toNat_xor, testBit_xor]
-
-@[simp] lemma getLsb'_not : (~~~x).getLsb' i = !(x.getLsb' i) := by
-  simp only [getLsb', getLsb, Complement.complement, BitVec.not, toNat_xor, toNat_ofFin,
-    testBit_xor, Nat.testBit_ones, Fin.is_lt, decide_True, Bool.true_xor]
-
-@[simp] lemma getLsb'_ofNat_zero : getLsb' 0#w i = false := by
-  simp only [getLsb', getLsb, toNat_ofNat, zero_mod, zero_testBit]
-
-proof_wanted getLsb'_negOne : getLsb' (-1) i = true
-
-end
-
-/-!
-### Distributivity of `Std.BitVec.getMsb'`
--/
-
-section
-variable (x y : BitVec w) (i : Fin w)
-
-@[simp] lemma getMsb'_and : (x &&& y).getMsb' i = (x.getMsb' i && y.getMsb' i) := by
-  simp only [← getLsb'_rev, getLsb'_and]
-
-@[simp] lemma getMsb'_or : (x ||| y).getMsb' i = (x.getMsb' i || y.getMsb' i) := by
-  simp only [← getLsb'_rev, getLsb'_or]
-
-@[simp] lemma getMsb'_xor : (x ^^^ y).getMsb' i = (xor (x.getMsb' i) (y.getMsb' i)) := by
-  simp only [← getLsb'_rev, getLsb'_xor]
-
-@[simp] lemma getMsb'_not : (~~~x).getMsb' i = !(x.getMsb' i) := by
-  simp only [← getLsb'_rev, getLsb'_not]
-
-@[simp] lemma getMsb'_ofNat_zero : getMsb' 0#w i = false := by
-  simp only [← getLsb'_rev, getLsb'_ofNat_zero]
-
-proof_wanted getMsb'_negOne : getMsb' (-1) i = true
-
-end
--- >>>>>>> origin/bitvec-ext
 
 end Std.BitVec
