@@ -76,13 +76,8 @@ lemma q_factorial_Monic (n : ℕ) : Monic (q_factorial n) := by
   · rw [q_factorial_succ]
     apply Monic.mul (@Polynomial.monic_geom_sum_X ℚ _ _ (succ_ne_zero n)) hn
 
-@[simp] theorem q_factorial_ne_zero (k : ℕ) : q_factorial k ≠ 0 := by
-  induction' k with k hk
-  · rw [q_factorial_zero]
-    simp
-  · rw [q_factorial_succ]
-    apply mul_ne_zero_iff.2 ⟨_, hk⟩
-    sorry
+@[simp] theorem q_factorial_ne_zero (k : ℕ) : q_factorial k ≠ 0 :=
+  Monic.ne_zero (q_factorial_Monic k)
 
 def gauss' (n k : ℕ) : RatFunc ℚ :=
   RatFunc.mk (q_factorial n) ((q_factorial k) * (q_factorial (n - k)))
@@ -127,6 +122,10 @@ gauss' n k = (RatFunc.mk (X ^ (k + 1) - 1) (X ^ (n - k) - 1)) * (gauss' n (succ 
   have h2 := gauss'_succ _ _ hk h1
   rw [gauss'_succ_succ n k h1, succ_sub_succ_eq_sub] at h2
   --rw [← @mul_left_cancel_iff _ _ _ (RatFunc.mk (X ^ (n + 1) - 1) (X ^ (k + 1) - 1)) _ _] at h2
+  have h2 := @mul_cancel_left_coe_nonZeroDivisors (RatFunc ℚ) _
+    (gauss' n k)
+  --have h3 := nonZeroDivisors.ne_zero
+  --have h4 :=
   sorry
 
 @[simp]
