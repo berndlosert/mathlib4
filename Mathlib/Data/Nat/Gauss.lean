@@ -122,8 +122,8 @@ gauss' n k = (RatFunc.mk (X ^ (k + 1) - 1) (X ^ (n - k) - 1)) * (gauss' n (succ 
   have h2 := gauss'_succ _ _ hk h1
   rw [gauss'_succ_succ n k h1, succ_sub_succ_eq_sub] at h2
   --rw [← @mul_left_cancel_iff _ _ _ (RatFunc.mk (X ^ (n + 1) - 1) (X ^ (k + 1) - 1)) _ _] at h2
-  have h2 := @mul_cancel_left_coe_nonZeroDivisors (RatFunc ℚ) _
-    (gauss' n k)
+  rw [← @mul_cancel_left_coe_nonZeroDivisors (RatFunc ℚ) _
+    (gauss' n k)]
   --have h3 := nonZeroDivisors.ne_zero
   --have h4 :=
   sorry
