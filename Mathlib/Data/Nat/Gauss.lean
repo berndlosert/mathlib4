@@ -58,16 +58,13 @@ lemma degree_sum (n : ℕ) : degree (∑ i in range (n + 1), (X ^ i) : ℚ[X]) �
 def q_factorial : ℕ → ℚ[X]
   | 0 => 1
   | succ n => (∑ i in range (n + 1), (X ^ i)) * q_factorial n
-#align nat.q_factorial Nat.q_factorial
 
 @[simp] theorem q_factorial_zero : q_factorial 0 = 1 :=
   rfl
-#align nat.q_factorial_zero Nat.q_factorial_zero
 
 theorem q_factorial_succ (n : ℕ) : q_factorial (n + 1) =
   (∑ i in range (n + 1), (X ^ i)) * q_factorial n :=
   rfl
-#align nat.q_factorial_succ Nat.q_factorial_succ
 
 lemma q_factorial_Monic (n : ℕ) : Monic (q_factorial n) := by
   induction' n with n hn
@@ -81,12 +78,10 @@ lemma q_factorial_Monic (n : ℕ) : Monic (q_factorial n) := by
 
 def gauss' (n k : ℕ) : RatFunc ℚ :=
   RatFunc.mk (q_factorial n) ((q_factorial k) * (q_factorial (n - k)))
-#align nat.gauss' Nat.gauss'
 
 @[simp]
 theorem gauss'_zero_right (n : ℕ) : gauss' n 0 = 1 := by
   simp [gauss']
-#align nat.gauss'_zero_right Nat.gauss'_zero_right
 
 lemma RatFunc.mk_pow (p q : ℚ[X]) (n : ℕ) : (RatFunc.mk p q) ^ n = RatFunc.mk (p ^ n) (q ^ n) := by
   simp_all only [RatFunc.mk_eq_div, div_pow, map_pow]
@@ -124,13 +119,13 @@ gauss' n k = (RatFunc.mk (X ^ (k + 1) - 1) (X ^ (n - k) - 1)) * (gauss' n (succ 
   --rw [← @mul_left_cancel_iff _ _ _ (RatFunc.mk (X ^ (n + 1) - 1) (X ^ (k + 1) - 1)) _ _] at h2
   rw [← @mul_cancel_left_coe_nonZeroDivisors (RatFunc ℚ) _
     (gauss' n k)]
+  sorry
   --have h3 := nonZeroDivisors.ne_zero
   --have h4 :=
   sorry
 
 @[simp]
 theorem degree_gauss' (n k : ℕ) : RatFunc.intDegree (gauss' n k) = k • (n - k) := by sorry
-#align nat.degree_gauss' Nat.degree_gauss'
 
 theorem gauss'_recurrence (n k : ℕ) : (gauss' (succ n) (succ k)) =
   (algebraMap ℚ[X] (RatFunc ℚ) X ^ k) * (gauss' n (succ k)) + (gauss' n k) := by sorry
@@ -141,20 +136,16 @@ def gauss : ℕ → ℕ → ℕ[X]
   | _, 0 => 1
   | 0, _ + 1 => 0
   | n + 1, k + 1 => gauss n k + X ^ k * gauss n (k + 1)
-#align nat.gauss Nat.gauss
 
 @[simp]
 theorem gauss_zero_right (n : ℕ) : gauss n 0 = 1 := by cases n <;> rfl
-#align nat.gauss_zero_right Nat.gauss_zero_right
 
 @[simp]
-theorem gauss_zero_succ (k : ℕ) : gauss 0 (succ k) = 0 :=
+theorem gauss_zero_succ (k : ℕ) : gauss 0 (k + 1) = 0 :=
   rfl
-#align nat.gauss_zero_succ Nat.gauss_zero_succ
 
-theorem gauss_succ_succ (n k : ℕ) : gauss (succ n) (succ k) = gauss n k + X ^ k * gauss n (succ k) :=
+theorem gauss_succ_succ (n k : ℕ) : gauss (n + 1) (k + 1) = gauss n k + X ^ k * gauss n (succ k) :=
   rfl
-#align nat.gauss_succ_succ Nat.gauss_succ_succ
 
 theorem gauss_eq_zero_of_lt : ∀ {n k}, n < k → gauss n k = 0
   | _, 0, hk => absurd hk (Nat.not_lt_zero _)
@@ -163,16 +154,13 @@ theorem gauss_eq_zero_of_lt : ∀ {n k}, n < k → gauss n k = 0
     have hnk : n < k := lt_of_succ_lt_succ hk
     have hnk1 : n < k + 1 := lt_of_succ_lt hk
     rw [gauss_succ_succ, gauss_eq_zero_of_lt hnk, gauss_eq_zero_of_lt hnk1, mul_zero, zero_add]
-#align nat.gauss_eq_zero_of_lt Nat.gauss_eq_zero_of_lt
 
 @[simp]
 theorem gauss_self (n : ℕ) : gauss n n = 1 := by
   induction n <;> simp [*, gauss, gauss_eq_zero_of_lt (lt_succ_self _)]
-#align nat.gauss_self Nat.gauss_self
 
 @[simp]
 theorem gauss_one_right (n : ℕ) : gauss n 1 = n := by induction n <;> simp [*, gauss, add_comm]
-#align nat.gauss_one_right Nat.gauss_one_right
 
 theorem gauss_eval₂_one_eq_choose (n k : ℕ) :
 (gauss n k).eval₂ (RingHom.id ℕ) 1 = choose n k := by
