@@ -426,15 +426,13 @@ lemma toNat_not (x : BitVec w) : (~~~x).toNat = 2^w - 1 - x.toNat := by
 
 lemma not_eq_sub (x : BitVec w) :
     ~~~x = (2^w - 1)#w - x := by
-  have hx : BitVec.toNat x < 2^w := toNat_lt x
   apply BitVec.toNat_inj.mp
-  simp [toNat_not]
-  simp [BitVec.toNat_sub]
-  rw [← Nat.sub_add_comm (by exact one_le_two_pow w)]
-  rw [Nat.add_sub_assoc (by omega)]
-  simp only [add_mod_left]
-  rw [Nat.mod_eq_of_lt (by omega)]
-  rw [Nat.sub_right_comm]
+  have hx : BitVec.toNat x < 2^w := toNat_lt x
+  rw [toNat_not, toNat_sub, toNat_ofNat, mod_add_mod, ← Nat.sub_add_comm (one_le_two_pow w),
+    Nat.add_sub_assoc (by exact Nat.le_sub_of_add_le' hx),
+    add_mod_left,
+    Nat.mod_eq_of_lt (by omega),
+    Nat.sub_right_comm]
 
 theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = Int.cast z := by
   cases w
@@ -453,7 +451,6 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = Int.cast z := by
       rw [Nat.add_mod, mod_one, Nat.sub_mod_left]
       generalize z % 2^(succ w) = x at *
       conv_rhs => rw [Nat.add_mod, Nat.sub_mod_left_of_pos (Nat.one_pos), Nat.sub_mod_left]
-
       split_ifs with hz hz' hz3
       . exfalso
         simp only [hz', zero_add, mod_one, one_ne_zero] at hz
@@ -465,34 +462,27 @@ theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = Int.cast z := by
           · rw [Nat.sub_eq_of_eq_add]
             simpa only [Nat.zero_eq, Nat.mul_one] using hz.symm
           · exfalso
-            have ha : z % 2 ^ succ w < 2 ^ succ w := Nat.mod_lt _ (by simp)
-            have hb : 1 < 2 ^ succ w := by simp
-            have hc : z % 2 ^ succ w + 1 < 2 * (2 ^ succ w) := by
-              simp only [Nat.two_mul]
-              apply Nat.add_lt_add ha hb
-            have hd : 2 ^ succ w * succ (succ k) >= 2 * (2 ^ succ w) := by
-              rw [Nat.mul_comm]
-              simp
+            have : 2 ^ succ w * succ (succ k) >= 2 * (2 ^ succ w) := by
+              simp only [Nat.mul_comm, ge_iff_le, gt_iff_lt, zero_lt_two, pow_pos,
+                _root_.mul_le_mul_right]
               linarith
             linarith
-        simp
+        simp only [ge_iff_le, tsub_le_iff_right, le_add_iff_nonneg_right, _root_.zero_le,
+          add_tsub_cancel_of_le, mod_self]
       · simp only [hz3, zero_add, _root_.add_zero, mod_one, Nat.sub_mod_left_of_pos zero_lt_one]
-      · have hxs : (x + 1) % 2 ^ (succ w) = x + 1 := by
+      · have h1 : (x + 1) % 2 ^ (succ w) = x + 1 := by
           apply Nat.mod_eq_of_lt
-          have := Nat.succ_le_of_lt hx
-          rcases Nat.lt_or_eq_of_le this with h | h
-          · exact h
-          · have h : x + 1 = _ := h
+          cases Nat.lt_or_eq_of_le (Nat.succ_le_of_lt hx)
+          case inl h => exact h
+          case inr h =>
+            change x + 1 = _ at h
             simp [h] at hz
-        obtain h2 : 2 ^ succ w - 1 + (2 ^ succ w - x) = (2 * 2 ^ succ w) - (x + 1) := by
+        have h2 : 2 ^ succ w - 1 + (2 ^ succ w - x) = (2 * 2 ^ succ w) - (x + 1) := by
           rw [← Nat.sub_add_comm, two_mul, ← Nat.add_sub_assoc, Nat.sub_sub]
           · exact Nat.le_of_lt hx
           · exact one_le_two_pow (succ w)
-        rw [hxs, h2, two_mul, Nat.add_sub_assoc]
-        rw [Nat.add_mod]
-        simp
-        rw [Nat.sub_mod_left_of_pos]
-        linarith
+        rw [h1, h2, two_mul, Nat.add_sub_assoc (hx), Nat.add_mod, mod_self, zero_add, mod_mod,
+          Nat.sub_mod_left_of_pos]
         linarith
 
 theorem toFin_intCast (z : ℤ) : toFin (z : BitVec w) = z := by
