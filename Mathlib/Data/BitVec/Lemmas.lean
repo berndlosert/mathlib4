@@ -265,19 +265,6 @@ instance : Unique (BitVec 0) where
   uniq := eq_ofNat_zero_of_width_zero
 
 /-!
-## Ordering
--/
-
-/-- `-1` is the supremum of `BitVec w` with unsigned less-equal -/
-lemma ule_neg_ofNat_one (x : BitVec w) : BitVec.ule x (-1#w) := by
-  -- simp only [BitVec.ule, LE.le, decide_eq_true_eq]
-  sorry
-
-/-- `-1#w` is the supremum of `BitVec w` with `≤` -/
-lemma le_neg_ofNat_one (x : BitVec w) : x ≤ (-1#w) := by
-  simpa only [BitVec.ule, LE.le, decide_eq_true_eq] using ule_neg_ofNat_one x
-
-/-!
 ## CommSemiring
 -/
 
@@ -410,6 +397,21 @@ theorem Nat.sub_mod_left {n x : Nat}  : (n - x) % n = if x = 0 then 0 else n - x
 
 lemma negOne_sub_eq_not (x : BitVec w) : -1#w - x = ~~~x := by
   rw [← add_not_self x]; abel
+
+/-- `-1#w` is the supremum of `BitVec w` with unsigned less-equal -/
+lemma ule_neg_ofNat_one (x : BitVec w) : BitVec.ule x (-1#w) := by
+  simp only [BitVec.ule, LE.le, le_eq, decide_eq_true_eq]
+  show x.toNat ≤ (-1#w).toNat
+  simp only [toNat_neg_ofNat_one]
+  apply le_of_lt_succ
+  show _ < _ + 1
+  rw [Nat.sub_add_cancel (one_le_two_pow w)]
+  exact toNat_lt x
+
+/-- `-1#w` is the supremum of `BitVec w` with `≤` -/
+lemma le_neg_ofNat_one (x : BitVec w) : x ≤ (-1#w) := by
+  simpa only [BitVec.ule, LE.le, decide_eq_true_eq] using ule_neg_ofNat_one x
+
 
 lemma toNat_not (x : BitVec w) : (~~~x).toNat = 2^w - 1 - x.toNat := by
   rw [← toNat_neg_ofNat_one, ← toNat_sub_of_le (le_neg_ofNat_one x), negOne_sub_eq_not]
