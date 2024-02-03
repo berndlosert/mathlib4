@@ -202,8 +202,6 @@ end
 
 /-!
 ### Distributivity of `Std.BitVec.toNat`
--- <<<<<<< HEAD
--- =======
 -/
 
 section
@@ -226,7 +224,8 @@ lemma toNat_neg : (-x).toNat = (2 ^ w - x.toNat) % 2 ^ w := by
 lemma toNat_natCast (n : ℕ) : toNat (n : BitVec w) = n % 2 ^ w := by
   rw [toNat, toFin_natCast, Fin.coe_ofNat_eq_mod]
 
-/-- An alternative unfolding of `(x - y).toNat`. If we know that `y ≤ x`, then we know the naive translation to `Nat`-subtraction does not truncate -/
+/-- An alternative unfolding of `(x - y).toNat`. If we know that `y ≤ x`, then we know the naive
+translation to `Nat`-subtraction does not truncate -/
 lemma toNat_sub_of_le {x y : BitVec w} (h : y ≤ x) :
     (x - y).toNat = x.toNat - y.toNat := by
   change y.toNat ≤ x.toNat at h
