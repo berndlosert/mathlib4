@@ -12,12 +12,6 @@ import Mathlib.FieldTheory.RatFunc
 import Mathlib.RingTheory.Polynomial.Basic
 import Mathlib.Algebra.GeomSum
 
-#align_import data.nat.choose.basic from "leanprover-community/mathlib"@"2f3994e1b117b1e1da49bcfb67334f33460c3ce4"
-#align_import data.polynomial.basic from "leanprover-community/mathlib"@"949dc57e616a621462062668c9f39e4e17b64b69"
-#align_import data.polynomial.div from "leanprover-community/mathlib"@"e1e7190efdcefc925cb36f257a8362ef22944204"
-#align_import data.polynomial.field_division from "leanprover-community/mathlib"@"bbeb185db4ccee8ed07dc48449414ebfa39cb821"
-#align_import field_theory.ratfunc from "leanprover-community/mathlib"@"bf9bbbcf0c1c1ead18280b0d010e417b10abb1b6"
-
 
 
 /-!
@@ -55,7 +49,7 @@ lemma degree_sum (n : ℕ) : degree (∑ i in range (n + 1), (X ^ i) : ℚ[X]) �
       (le_of_eq (@degree_X_pow ℚ _ _ (n + 1))))
 
 /-- `q_factorial n` is the q-analog factorial of `n`. -/
-def q_factorial : ℕ → ℚ[X]
+def q_factorial : ℕ → ℕ[X]
   | 0 => 1
   | succ n => (∑ i in range (n + 1), (X ^ i)) * q_factorial n
 
@@ -71,12 +65,12 @@ lemma q_factorial_Monic (n : ℕ) : Monic (q_factorial n) := by
   · rw [q_factorial_zero]
     simp
   · rw [q_factorial_succ]
-    apply Monic.mul (@Polynomial.monic_geom_sum_X ℚ _ _ (succ_ne_zero n)) hn
+    apply Monic.mul (@Polynomial.monic_geom_sum_X ℕ _ _ (succ_ne_zero n)) hn
 
 @[simp] theorem q_factorial_ne_zero (k : ℕ) : q_factorial k ≠ 0 :=
   Monic.ne_zero (q_factorial_Monic k)
 
-def gauss' (n k : ℕ) : RatFunc ℚ :=
+/-def gauss' (n k : ℕ) : RatFunc ℚ :=
   RatFunc.mk (q_factorial n) ((q_factorial k) * (q_factorial (n - k)))
 
 @[simp]
@@ -128,14 +122,14 @@ gauss' n k = (RatFunc.mk (X ^ (k + 1) - 1) (X ^ (n - k) - 1)) * (gauss' n (succ 
 theorem degree_gauss' (n k : ℕ) : RatFunc.intDegree (gauss' n k) = k • (n - k) := by sorry
 
 theorem gauss'_recurrence (n k : ℕ) : (gauss' (succ n) (succ k)) =
-  (algebraMap ℚ[X] (RatFunc ℚ) X ^ k) * (gauss' n (succ k)) + (gauss' n k) := by sorry
+  (algebraMap ℚ[X] (RatFunc ℚ) X ^ k) * (gauss' n (succ k)) + (gauss' n k) := by sorry-/
 
 /-- `choose n k` is the number of `k`-element subsets in an `n`-element set. Also known as binomial
 coefficients. -/
 def gauss : ℕ → ℕ → ℕ[X]
   | _, 0 => 1
   | 0, _ + 1 => 0
-  | n + 1, k + 1 => gauss n k + X ^ k * gauss n (k + 1)
+  | n + 1, k + 1 => gauss n k + X ^ (k + 1) * gauss n (k + 1)
 
 @[simp]
 theorem gauss_zero_right (n : ℕ) : gauss n 0 = 1 := by cases n <;> rfl
@@ -144,8 +138,8 @@ theorem gauss_zero_right (n : ℕ) : gauss n 0 = 1 := by cases n <;> rfl
 theorem gauss_zero_succ (k : ℕ) : gauss 0 (k + 1) = 0 :=
   rfl
 
-theorem gauss_succ_succ (n k : ℕ) : gauss (n + 1) (k + 1) = gauss n k + X ^ k * gauss n (succ k) :=
-  rfl
+theorem gauss_succ_succ (n k : ℕ) :
+gauss (n + 1) (k + 1) = gauss n k + X ^ (k + 1) * gauss n (succ k) := rfl
 
 theorem gauss_eq_zero_of_lt : ∀ {n k}, n < k → gauss n k = 0
   | _, 0, hk => absurd hk (Nat.not_lt_zero _)
@@ -160,41 +154,93 @@ theorem gauss_self (n : ℕ) : gauss n n = 1 := by
   induction n <;> simp [*, gauss, gauss_eq_zero_of_lt (lt_succ_self _)]
 
 @[simp]
-theorem gauss_one_right (n : ℕ) : gauss n 1 = n := by induction n <;> simp [*, gauss, add_comm]
+theorem gauss_succ_self (n : ℕ) : gauss n (succ n) = 0 :=
+  gauss_eq_zero_of_lt (lt_succ_self _)
 
-theorem gauss_eval₂_one_eq_choose (n k : ℕ) :
-(gauss n k).eval₂ (RingHom.id ℕ) 1 = choose n k := by
-  induction' k with k hk
-  · sorry
-  · induction' n with n hn
-    · sorry
-    · rw [gauss_succ_succ, choose_succ_succ, eval₂_add, eval₂_mul, eval₂_X_pow, one_pow, one_mul]
-      sorry
+@[simp]
+theorem gauss_one_right (n : ℕ) : gauss n 1 = (∑ i in range n, (X ^ i) : ℕ[X]) := by
+  induction n <;> simp [*, gauss, sum_range_succ', add_comm, ← monomial_one_one_eq_X, mul_sum,
+  monomial_mul_monomial]
 
-  /-have : eval₂ (RingHom.id ℕ) 1 (gauss (succ n) (succ k)) = choose (succ n) (succ k) :=
-    by
-      · rw [gauss_succ_succ, choose_succ_succ, eval₂_add, eval₂_mul, eval₂_X_pow, one_pow, one_mul]
-        sorry-/
-  /-induction' n with n hn
-  · sorry
-  · induction' k with k hk
-    · sorry
-    · rw [gauss_succ_succ, choose_succ_succ, eval₂_add, eval₂_mul, eval₂_X_pow, one_pow, one_mul,
-      hn]
-      sorry-/
-  /-induction n with
-  | zero =>
-    induction k with
-    | zero =>
-      rw [gauss_self, choose_self, eval₂_one]
-    | succ n ih =>
-      rw [gauss_zero_succ, choose_zero_succ, eval₂_zero]
-  | succ n ihn =>
-    induction k with
-    | zero =>
-      rw [gauss_zero_right, choose_zero_right, eval₂_one]
-    | succ n ihk =>
-      rw [gauss_succ_succ, choose_succ_succ, eval₂_add, eval₂_mul, eval₂_X_pow, one_pow, one_mul,
-        ihn, ihk]-/
+theorem succ_mul_gauss_eq : ∀ n k, (∑ i in range (succ n), (X ^ i)) * gauss n k =
+  gauss (succ n) (succ k) * (∑ i in range (succ k), (X ^ i))
+  | 0, 0 => by simp
+  | 0, k + 1 => by simp [gauss]
+  | n + 1, 0 => by
+    simp [gauss, mul_succ, sum_range_succ']
+    rw [mul_add, add_comm _ 1, add_comm _ X, ← mul_assoc, ← pow_two, mul_sum]
+    simp [← pow_add, add_comm 2]
+  | n + 1, k + 1 => by
+    rw [gauss_succ_succ (succ n) (succ k), add_mul, mul_assoc, ← succ_mul_gauss_eq n (succ k)]
+    simp [sum_range_succ' _ (k + 1), pow_add, ← sum_mul, mul_add]
+    rw [← mul_assoc (gauss (succ n) (succ k)), ← succ_mul_gauss_eq n, add_right_comm, mul_comm _ X,
+      mul_comm _ X, mul_assoc X, mul_comm (X ^ (succ k)), mul_assoc, ← mul_assoc X, ← mul_assoc X,
+      ← mul_add, mul_comm _ (X ^ (succ k)), ← gauss_succ_succ, sum_range_succ', add_mul, mul_sum]
+    simp [pow_add, mul_comm X]
+
+theorem gauss_mul_q_factorial_mul_q_factorial : ∀ {n k}, k ≤ n →
+  gauss n k * (q_factorial k) * (q_factorial (n - k)) = q_factorial n
+  | 0, _, hk => by simp [Nat.eq_zero_of_le_zero hk]
+  | n + 1, 0, _ => by simp
+  | n + 1, succ k, hk => by
+    rcases lt_or_eq_of_le hk with hk₁ | hk₁
+    · have h : gauss n k * q_factorial k.succ * q_factorial (n - k) =
+          (∑ i in range (k + 1), (X ^ i)) * q_factorial n := by
+        rw [← gauss_mul_q_factorial_mul_q_factorial (le_of_succ_le_succ hk)]
+        simp [q_factorial_succ, mul_comm, mul_left_comm, mul_assoc]
+      have h₁ : q_factorial (n - k) = (∑ i in range (n - k), (X ^ i)) * q_factorial (n - k.succ) := by
+        rw [← succ_sub_succ, succ_sub (le_of_lt_succ hk₁), q_factorial_succ]
+      have h₂ : gauss n (succ k) * q_factorial k.succ * ((∑ i in range (n - k), (X ^ i)) *
+        (q_factorial (n - k.succ))) = (∑ i in range (n - k), (X ^ i)) * q_factorial n := by
+        rw [← gauss_mul_q_factorial_mul_q_factorial (le_of_lt_succ hk₁)]
+        simp [factorial_succ, mul_comm, mul_left_comm, mul_assoc]
+      rw [gauss_succ_succ, add_mul, add_mul, succ_sub_succ, h, h₁, mul_assoc, mul_assoc,
+        ← mul_assoc (gauss n (succ k)), h₂, ← mul_assoc, ← add_mul, q_factorial_succ, mul_sum]
+      simp [← pow_add]
+      rw [← sum_range_add, add_comm k 1, add_assoc, add_comm k, Nat.sub_add_cancel
+        (le_of_lt (succ_lt_succ_iff.1 hk₁)), add_comm]
+    · rw [hk₁]; simp [hk₁, mul_comm, gauss, tsub_self]
+
+
+/-theorem gauss_eq_factorial_div_factorial {n k : ℕ} (hk : k ≤ n) :
+    gauss n k = q_factorial n / (q_factorial k * q_factorial (n - k)) := by
+  rw [← gauss_mul_factorial_mul_factorial hk, mul_assoc]
+  exact (mul_div_left _ (mul_pos (factorial_pos _) (factorial_pos _))).symm-/
+
+theorem gauss_symm (n k : ℕ) : gauss n k = gauss n (n - k) := by sorry
+
+@[simp]
+theorem gauss_pred_right (n : ℕ) : gauss n (n - 1) = (∑ i in range n, (X ^ i) : ℕ[X]) := by
+  induction n <;> simp [*, gauss, sum_range_succ', add_comm, ← monomial_one_one_eq_X, mul_sum,
+  monomial_mul_monomial]
+
+theorem gauss_eval_one_eq_choose (n k : ℕ) :
+(gauss n k).eval 1 = choose n k := by
+  induction' n with n hn generalizing k <;> induction' k with k <;>
+    simp [gauss_succ_succ, choose_succ_succ]
+  rw [hn k, hn (succ k)]
+
+-- is this even possible to prove with natdegree?
+theorem gauss_degree (n k : ℕ) : natDegree (gauss n k) = k * (n - k) := by
+  induction' n with n hn2 generalizing k <;> induction' k with k
+  · rw [gauss_zero_right]
+    simp
+  · simp
+  · simp
+  · rw [gauss_succ_succ, natDegree_add_eq_right_of_natDegree_lt, X_pow_mul, natDegree_mul_X_pow,
+      hn2, succ_sub_succ, Nat.mul_sub_left_distrib, Nat.mul_sub_left_distrib, mul_succ]
+    --rw [add_comm, ← Nat.add_sub_assoc]
+    sorry
+    sorry
+    sorry
+
+theorem gauss_Monic (n k : ℕ) (hkn : k ≤ n) : Monic (gauss n k) := by
+  induction' n with n hn generalizing k <;> induction' k with k <;>
+    simp [gauss_succ_succ, choose_succ_succ]
+  sorry
+  --have h2 := Monic.add_of_left
+  sorry
+
+theorem gauss_eq_zero_iff {n k : ℕ} : n.gauss k = 0 ↔ n < k := by sorry
 
 end Nat
