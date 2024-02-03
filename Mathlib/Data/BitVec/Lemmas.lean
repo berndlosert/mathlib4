@@ -374,8 +374,11 @@ variable (x y : BitVec w) (i : Fin w)
 
 end
 
-/-
-## TO BE ORGANIZED
+/-!
+### `IntCast` & `CommRing`
+Show that casting `z : Int` to a bitvector is the same as casting `z` to `Fin 2^w`, and
+using the result as argument to `ofFin` to construct a bitvector.
+This result ist the final piece needed to show that bitvectors form a commutative ring.
 -/
 
 /-- Adding a bitvector to its own complement yields the all ones bitpattern -/
@@ -384,6 +387,7 @@ end
   · rfl
   · simp [adcb]
 
+/-- Subtracting `x` from the all ones bitvector is equivalent to taking its complement -/
 lemma negOne_sub_eq_not (x : BitVec w) : -1#w - x = ~~~x := by
   rw [← add_not_self x]; abel
 
@@ -392,10 +396,6 @@ lemma not_eq_sub (x : BitVec w) :
     ~~~x = (-1#w) - x := by
   suffices ~~~x + x = -1#w from eq_sub_of_add_eq this
   rw [add_comm, add_not_self]
-
-/-!
-### `IntCast`
--/
 
 @[simp] lemma natCast_eq (x w : Nat) :
     Nat.cast x = x#w := rfl
