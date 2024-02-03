@@ -425,65 +425,29 @@ lemma toNat_not (x : BitVec w) : (~~~x).toNat = 2^w - 1 - x.toNat := by
 -/
 
 lemma not_eq_sub (x : BitVec w) :
-    ~~~x = (2^w - 1)#w - x := by
+    ~~~x = (-1#w) - x := by
   apply BitVec.toNat_inj.mp
   have hx : BitVec.toNat x < 2^w := toNat_lt x
-  rw [toNat_not, toNat_sub, toNat_ofNat, mod_add_mod, ← Nat.sub_add_comm (one_le_two_pow w),
+  rw [toNat_not, toNat_sub, toNat_neg_ofNat_one, ← Nat.sub_add_comm (one_le_two_pow w),
     Nat.add_sub_assoc (by exact Nat.le_sub_of_add_le' hx),
     add_mod_left,
     Nat.mod_eq_of_lt (by omega),
     Nat.sub_right_comm]
+
+@[simp] lemma natCast_eq (x w : Nat) :
+    Nat.cast x = x#w := rfl
 
 theorem ofFin_intCast (z : ℤ) : ofFin (z : Fin (2^w)) = Int.cast z := by
   cases w
   case zero =>
     simp only [eq_ofNat_zero_of_width_zero]
   case succ w =>
-    apply toNat_inj.mp
-    simp only [toNat_ofFin, Int.cast, IntCast.intCast, BitVec.ofInt]
+    simp only [Int.cast, IntCast.intCast, BitVec.ofInt]
     unfold Int.castDef
     cases' z with z z
-    · simp only [Fin.val_nat_cast, toNat_ofNat]
-    · simp only [Nat.cast, NatCast.natCast, Fin.ofNat''_eq_cast, Fin.coe_neg, Fin.val_nat_cast,
-        not_eq_sub, toNat_sub, toNat_ofNat, mod_add_mod]
-      have mod_one : 1 % 2 ^ succ w = 1 := Nat.mod_eq_of_lt (one_lt_two_pow' w)
-      have hx : z % 2 ^ (succ w) < 2 ^ (succ w) := Nat.mod_lt _ (two_pow_pos (succ w))
-      rw [Nat.add_mod, mod_one, Nat.sub_mod_left]
-      generalize z % 2^(succ w) = x at *
-      conv_rhs => rw [Nat.add_mod, Nat.sub_mod_left_of_pos (Nat.one_pos), Nat.sub_mod_left]
-      split_ifs with hz hz' hz3
-      . exfalso
-        simp only [hz', zero_add, mod_one, one_ne_zero] at hz
-      . obtain rfl : x = (2^succ w) - 1 := by
-          rw [← Nat.dvd_iff_mod_eq_zero] at hz
-          obtain ⟨k, hz⟩ := hz
-          rcases k with rfl | rfl | ⟨k⟩
-          · contradiction
-          · rw [Nat.sub_eq_of_eq_add]
-            simpa only [Nat.zero_eq, Nat.mul_one] using hz.symm
-          · exfalso
-            have : 2 ^ succ w * succ (succ k) >= 2 * (2 ^ succ w) := by
-              simp only [Nat.mul_comm, ge_iff_le, gt_iff_lt, zero_lt_two, pow_pos,
-                _root_.mul_le_mul_right]
-              linarith
-            linarith
-        simp only [ge_iff_le, tsub_le_iff_right, le_add_iff_nonneg_right, _root_.zero_le,
-          add_tsub_cancel_of_le, mod_self]
-      · simp only [hz3, zero_add, _root_.add_zero, mod_one, Nat.sub_mod_left_of_pos zero_lt_one]
-      · have h1 : (x + 1) % 2 ^ (succ w) = x + 1 := by
-          apply Nat.mod_eq_of_lt
-          cases Nat.lt_or_eq_of_le (Nat.succ_le_of_lt hx)
-          case inl h => exact h
-          case inr h =>
-            change x + 1 = _ at h
-            simp [h] at hz
-        have h2 : 2 ^ succ w - 1 + (2 ^ succ w - x) = (2 * 2 ^ succ w) - (x + 1) := by
-          rw [← Nat.sub_add_comm, two_mul, ← Nat.add_sub_assoc, Nat.sub_sub]
-          · exact Nat.le_of_lt hx
-          · exact one_le_two_pow (succ w)
-        rw [h1, h2, two_mul, Nat.add_sub_assoc (hx), Nat.add_mod, mod_self, zero_add, mod_mod,
-          Nat.sub_mod_left_of_pos]
-        linarith
+    · rfl
+    · simp only [cast_add, cast_one, neg_add_rev, ofFin_add, ofFin_neg, ofFin_ofNat,
+      ofNat_eq_ofNat, ofFin_natCast, natCast_eq, ← sub_eq_add_neg (G := BitVec _), not_eq_sub]
 
 theorem toFin_intCast (z : ℤ) : toFin (z : BitVec w) = z := by
   apply toFin_inj.mpr <| (ofFin_intCast z).symm
