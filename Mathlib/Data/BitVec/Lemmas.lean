@@ -378,17 +378,6 @@ end
 ## TO BE ORGANIZED
 -/
 
-theorem Nat.sub_mod_left_of_pos {n x : Nat} (hx : x > 0) : (n - x) % n = n - x := by
-  rcases n with _ | n <;> simp
-  apply Nat.sub_lt <;> linarith
-
-theorem Nat.sub_mod_left {n x : Nat}  : (n - x) % n = if x = 0 then 0 else n - x := by
-  split_ifs with h
-  . subst h; simp
-  . apply Nat.sub_mod_left_of_pos; rcases x with zero | succ
-    · contradiction
-    · simp
-
 /-- Adding a bitvector to its own complement yields the all ones bitpattern -/
 @[simp] lemma add_not_self (x : BitVec w) : x + ~~~x = -1#w := by
   rw [add_as_adc, adc, iunfoldr_replace (fun _ => false) (-1#w)]
@@ -398,41 +387,15 @@ theorem Nat.sub_mod_left {n x : Nat}  : (n - x) % n = if x = 0 then 0 else n - x
 lemma negOne_sub_eq_not (x : BitVec w) : -1#w - x = ~~~x := by
   rw [← add_not_self x]; abel
 
-/-- `-1#w` is the supremum of `BitVec w` with unsigned less-equal -/
-lemma ule_neg_ofNat_one (x : BitVec w) : BitVec.ule x (-1#w) := by
-  simp only [BitVec.ule, LE.le, le_eq, decide_eq_true_eq]
-  show x.toNat ≤ (-1#w).toNat
-  simp only [toNat_neg_ofNat_one]
-  apply le_of_lt_succ
-  show _ < _ + 1
-  rw [Nat.sub_add_cancel (one_le_two_pow w)]
-  exact toNat_lt x
-
-/-- `-1#w` is the supremum of `BitVec w` with `≤` -/
-lemma le_neg_ofNat_one (x : BitVec w) : x ≤ (-1#w) := by
-  simpa only [BitVec.ule, LE.le, decide_eq_true_eq] using ule_neg_ofNat_one x
-
-
-lemma toNat_not (x : BitVec w) : (~~~x).toNat = 2^w - 1 - x.toNat := by
-  rw [← toNat_neg_ofNat_one, ← toNat_sub_of_le (le_neg_ofNat_one x), negOne_sub_eq_not]
-
--- theorem sub_eq_add_not (x y : BitVec w) :
---     x - y = x + ~~~y + 1 := by
---   simp [← toNat_inj, toNat_sub, Complement.complement, BitVec.not]
+/-- Negating every bit of `x` is the same as subtracting `x` from the all-ones bitvector -/
+lemma not_eq_sub (x : BitVec w) :
+    ~~~x = (-1#w) - x := by
+  suffices ~~~x + x = -1#w from eq_sub_of_add_eq this
+  rw [add_comm, add_not_self]
 
 /-!
 ### `IntCast`
 -/
-
-lemma not_eq_sub (x : BitVec w) :
-    ~~~x = (-1#w) - x := by
-  apply BitVec.toNat_inj.mp
-  have hx : BitVec.toNat x < 2^w := toNat_lt x
-  rw [toNat_not, toNat_sub, toNat_neg_ofNat_one, ← Nat.sub_add_comm (one_le_two_pow w),
-    Nat.add_sub_assoc (by exact Nat.le_sub_of_add_le' hx),
-    add_mod_left,
-    Nat.mod_eq_of_lt (by omega),
-    Nat.sub_right_comm]
 
 @[simp] lemma natCast_eq (x w : Nat) :
     Nat.cast x = x#w := rfl
