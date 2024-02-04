@@ -28,12 +28,15 @@ including a version of the Cantor-Bendixson Theorem.
 * `exists_countable_union_perfect_of_isClosed`: One version of the **Cantor-Bendixson Theorem**:
   A closed set in a second countable space can be written as the union of a countable set and a
   perfect set.
+* `ConnectedSpace.perfectSpace_of_nontrivial_of_t1space`: A T1, connected, nontrivial space is
+  perfect.
+* `set_infinite_of_perfectSpace`: In a T1 `PerfectSpace`, every nonempty open set must be infinite.
 
 ## Implementation Notes
 
 We do not require perfect sets to be nonempty.
 
-We define a nonstandard predicate, `Preperfect`, which drops the closed-ness requirement
+We define a nonstandard predicate, `PrePerfect`, which drops the closed-ness requirement
 from the definition of perfect. In T1 spaces, this is equivalent to having a perfect closure,
 see `preperfect_iff_perfect_closure`.
 
@@ -62,21 +65,17 @@ section Defs
 /-- A set `C` is preperfect if all of its points are accumulation points of itself.
 If `C` is nonempty and `α` is a T1 space, this is equivalent to the closure of `C` being perfect.
 See `preperfect_iff_perfect_closure`.-/
-def Preperfect (C : Set α) : Prop :=
+def PrePerfect (C : Set α) : Prop :=
   ∀ ⦃x⦄, x ∈ C → AccPt x (𝓟 C)
-#align preperfect Preperfect
+#align preperfect PrePerfect
 
 /-- A set `C` is called perfect if it is closed and all of its
 points are accumulation points of itself.
 Note that we do not require `C` to be nonempty.-/
 structure Perfect (C : Set α) : Prop where
   closed : IsClosed C
-  acc : Preperfect C
+  acc : PrePerfect C
 #align perfect Perfect
-
-theorem preperfect_iff_nhds : Preperfect s ↔ ∀ x ∈ s, ∀ U ∈ 𝓝 x, ∃ y ∈ U ∩ s, y ≠ x := by
-  simp only [Preperfect, accPt_iff_nhds]
-#align preperfect_iff_nhds preperfect_iff_nhds
 
 /--
 A topological space `X` is said to be perfect if its universe is a perfect set.
@@ -91,7 +90,15 @@ theorem PerfectSpace.univ_perfect : Perfect (Set.univ : Set α) := PerfectSpace.
 
 end Defs
 
-section Preperfect
+section PrePerfect
+
+theorem preperfect_iff_nhds : PrePerfect s ↔ ∀ x ∈ s, ∀ U ∈ 𝓝 x, ∃ y ∈ U ∩ s, y ≠ x := by
+  simp only [PrePerfect, accPt_iff_nhds]
+#align preperfect_iff_nhds preperfect_iff_nhds
+
+theorem PrePerfect.nhdsWithin_neBot (s_prePerfect : PrePerfect s) {x : α} (x_in_s : x ∈ s) :
+    Filter.NeBot (𝓝[≠] x) := ⟨fun eq_bot => by
+  simpa [AccPt, Filter.neBot_iff, eq_bot, bot_inf_eq] using s_prePerfect x_in_s⟩
 
 /-- If `x` is an accumulation point of a set `C` and `U` is a neighborhood of `x`,
 then `x` is an accumulation point of `U ∩ C`. -/
@@ -104,15 +111,15 @@ theorem accPt_principal_iff_inter_of_mem_nhds {x : α} (t_nhds : t ∈ 𝓝 x) :
   exact h_acc
 
 /-- The intersection of a preperfect set and an open set is preperfect. -/
-theorem Preperfect.open_inter (s_prePerfect : Preperfect s) (t_open : IsOpen t) :
-    Preperfect (s ∩ t) := fun _ ⟨x_in_s, x_in_t⟩ =>
+theorem PrePerfect.open_inter (s_prePerfect : PrePerfect s) (t_open : IsOpen t) :
+    PrePerfect (s ∩ t) := fun _ ⟨x_in_s, x_in_t⟩ =>
   (accPt_principal_iff_inter_of_mem_nhds <| t_open.mem_nhds x_in_t).mp (s_prePerfect x_in_s)
 
-#align preperfect.open_inter Preperfect.open_inter
+#align preperfect.open_inter PrePerfect.open_inter
 
 /-- The closure of a preperfect set is perfect.
 For a converse, see `preperfect_iff_perfect_closure`. -/
-theorem Preperfect.perfect_closure (s_prePerfect : Preperfect s) : Perfect (closure s) := by
+theorem PrePerfect.perfect_closure (s_prePerfect : PrePerfect s) : Perfect (closure s) := by
   constructor; · exact isClosed_closure
   intro x hx
   by_cases h : x ∈ s <;> apply AccPt.mono _ (principal_mono.mpr subset_closure)
@@ -121,10 +128,10 @@ theorem Preperfect.perfect_closure (s_prePerfect : Preperfect s) : Perfect (clos
   rw [AccPt, nhdsWithin, inf_assoc, inf_principal, this]
   rw [closure_eq_cluster_pts] at hx
   exact hx
-#align preperfect.perfect_closure Preperfect.perfect_closure
+#align preperfect.perfect_closure PrePerfect.perfect_closure
 
 /-- In a T1 space, being preperfect is equivalent to having perfect closure.-/
-theorem preperfect_iff_perfect_closure [T1Space α] : Preperfect s ↔ Perfect (closure s) := by
+theorem preperfect_iff_perfect_closure [T1Space α] : PrePerfect s ↔ Perfect (closure s) := by
   constructor <;> intro h
   · exact h.perfect_closure
   intro x xC
@@ -139,13 +146,13 @@ theorem preperfect_iff_perfect_closure [T1Space α] : Preperfect s ↔ Perfect (
   exact H.mono this
 #align preperfect_iff_perfect_closure preperfect_iff_perfect_closure
 
-end Preperfect
+end PrePerfect
 
 section Splitting
 
 theorem Perfect.closure_nhds_inter (s_perfect : Perfect s) (x : α) (x_in_s : x ∈ s) (x_in_t : x ∈ t)
     (t_open : IsOpen t) : Perfect (closure (t ∩ s)) ∧ (closure (t ∩ s)).Nonempty := ⟨
-  Preperfect.perfect_closure <| Set.inter_comm _ _ ▸ s_perfect.acc.open_inter t_open,
+  PrePerfect.perfect_closure <| Set.inter_comm _ _ ▸ s_perfect.acc.open_inter t_open,
   ⟨x, subset_closure ⟨x_in_t, x_in_s⟩⟩⟩
 #align perfect.closure_nhds_inter Perfect.closure_nhds_inter
 
@@ -244,9 +251,18 @@ instance PerfectSpace.not_isolated (x : α): Filter.NeBot (𝓝[≠] x) := by
   have := (PerfectSpace.univ_perfect α).acc (Set.mem_univ x)
   rwa [AccPt, Filter.principal_univ, inf_top_eq] at this
 
+theorem PerfectSpace.prePerfect_of_isOpen {s : Set α} (s_open : IsOpen s) : PrePerfect s :=
+  Set.univ_inter s ▸ (PerfectSpace.univ_perfect α).acc.open_inter s_open
+
 end PerfectSpace
 
-section PerfectSpace.Prod
+section PerfectSpace.Constructions
+
+/-!
+### Constructions of perfect spaces
+
+The product topological space `α × β` is perfect if `α` or `β` is perfect.
+-/
 
 variable {β : Type*} [TopologicalSpace β]
 
@@ -270,7 +286,53 @@ instance PerfectSpace.prod_right [PerfectSpace β] : PerfectSpace (α × β) :=
     right
     exact PerfectSpace.not_isolated q
 
-end PerfectSpace.Prod
+/-- A non-trivial connected T1 space has no isolated points. -/
+instance (priority := 100) ConnectedSpace.perfectSpace_of_nontrivial_of_t1space
+    [PreconnectedSpace α] [Nontrivial α] [T1Space α] : PerfectSpace α := by
+  apply perfectSpace_of_forall_not_isolated
+  intro x
+  by_contra contra
+  rw [not_neBot, ← isOpen_singleton_iff_punctured_nhds] at contra
+  replace contra := nonempty_inter isOpen_compl_singleton
+    contra (compl_union_self _) (Set.nonempty_compl_of_nontrivial _) (singleton_nonempty _)
+  simp [compl_inter_self {x}] at contra
+
+end PerfectSpace.Constructions
+
+section PerfectSpace.Infinite
+/-!
+### PrePerfect sets are infinite
+
+Any open pre-perfect set must be infinite.
+As a corollary, a perfect space must be infinite (`infinite_of_perfectSpace`) and every nonempty,
+open set must be infinite (`set_infinite_of_perfectSpace`).
+-/
+
+/--
+In a T1 space, nonempty open pre-perfect sets are infinite.
+-/
+theorem set_infinite_of_prePerfect [T1Space α] {s : Set α} (s_prePerfect : PrePerfect s)
+    (s_open : IsOpen s) (s_nonempty : s.Nonempty) : s.Infinite := by
+  let ⟨p, p_in_s⟩ := s_nonempty
+  have := s_prePerfect.nhdsWithin_neBot p_in_s
+  apply infinite_of_mem_nhds p
+  exact IsOpen.mem_nhds s_open p_in_s
+
+/--
+In a T1, perfect space, nonempty open sets are infinite.
+-/
+theorem set_infinite_of_perfectSpace [T1Space α] [PerfectSpace α] {s : Set α} (s_open : IsOpen s)
+    (s_nonempty : s.Nonempty) : s.Infinite :=
+  set_infinite_of_prePerfect (PerfectSpace.prePerfect_of_isOpen s_open) s_open s_nonempty
+
+variable (α) in
+/--
+If a topological space is perfect, T1 and nonempty, then it is infinite.
+-/
+theorem infinite_of_perfectSpace [T1Space α] [PerfectSpace α] [Nonempty α] : Infinite α :=
+  Set.infinite_univ_iff.mp (set_infinite_of_perfectSpace isOpen_univ univ_nonempty)
+
+end PerfectSpace.Infinite
 
 @[deprecated accPt_principal_iff_inter_of_mem_nhds]
 theorem AccPt.nhds_inter {x : α} (h_acc : AccPt x (𝓟 s)) (t_nhds : t ∈ 𝓝 x) :

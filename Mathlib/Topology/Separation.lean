@@ -6,7 +6,6 @@ Authors: Johannes Hölzl, Mario Carneiro
 import Mathlib.Topology.Compactness.SigmaCompact
 import Mathlib.Topology.Connected.TotallyDisconnected
 import Mathlib.Topology.Inseparable
-import Mathlib.Topology.NoIsolatedPoints
 
 #align_import topology.separation from "leanprover-community/mathlib"@"d91e7f7a7f1c7e9f0e18fdb6bde4f652004c735d"
 
@@ -814,25 +813,6 @@ theorem infinite_of_mem_nhds {X} [TopologicalSpace X] [T1Space X] (x : X) [hx : 
   exact isOpen_singleton_of_finite_mem_nhds x hs hsf
 #align infinite_of_mem_nhds infinite_of_mem_nhds
 
-/--
-If a space has no isolated points, then every nonempty open set is infinite.
--/
-theorem set_infinite_of_noIsolatedPoints [T1Space X] [NoIsolatedPoints X] {s : Set X}
-    (s_open : IsOpen s) (s_nonempty : s.Nonempty): Set.Infinite s := by
-  let ⟨p, p_in_s⟩ := s_nonempty
-  apply infinite_of_mem_nhds p
-  exact IsOpen.mem_nhds s_open p_in_s
-
-variable (X) in
-/--
-If a space has no isolated points and is nonempty, then it is infinite.
-
-NOTE: setting this as `instance` causes timeouts in complex theorems using `simp` without `only`,
-as the complexity of proving `Nontrivial X` blows up.
--/
-theorem infinite_of_noIsolatedPoints [T1Space X] [NoIsolatedPoints X] [Nonempty X]: Infinite X :=
-  Set.infinite_univ_iff.mp (set_infinite_of_noIsolatedPoints isOpen_univ univ_nonempty)
-
 theorem discrete_of_t1_of_finite [T1Space X] [Finite X] :
     DiscreteTopology X := by
   apply singletons_open_iff_discrete.mp
@@ -859,17 +839,6 @@ theorem IsPreconnected.infinite_of_nontrivial [T1Space X] {s : Set X} (h : IsPre
 theorem ConnectedSpace.infinite [ConnectedSpace X] [Nontrivial X] [T1Space X] : Infinite X :=
   infinite_univ_iff.mp <| isPreconnected_univ.infinite_of_nontrivial nontrivial_univ
 #align connected_space.infinite ConnectedSpace.infinite
-
-/-- A non-trivial connected T1 space has no isolated points. -/
-instance (priority := 100) ConnectedSpace.noIsolatedPoints_of_nontrivial_of_t1space
-    [ConnectedSpace X] [Nontrivial X] [T1Space X] : NoIsolatedPoints X := by
-  constructor
-  intro x
-  by_contra contra
-  rw [not_neBot, ← isOpen_singleton_iff_punctured_nhds] at contra
-  replace contra := nonempty_inter isOpen_compl_singleton
-    contra (compl_union_self _) (Set.nonempty_compl_of_nontrivial _) (singleton_nonempty _)
-  simp [compl_inter_self {x}] at contra
 
 theorem singleton_mem_nhdsWithin_of_mem_discrete {s : Set X} [DiscreteTopology s] {x : X}
     (hx : x ∈ s) : {x} ∈ 𝓝[s] x := by
