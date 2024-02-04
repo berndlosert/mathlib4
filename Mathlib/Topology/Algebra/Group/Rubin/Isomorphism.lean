@@ -26,7 +26,7 @@ open MulAction
 open Pointwise
 
 variable {G : Type*} (α : Type*) [Group G] [MulAction G α] [TopologicalSpace α] [T2Space α]
-variable [ContinuousConstSMul G α] [LocallyDenseSMul G α] [FaithfulSMul G α] [NoIsolatedPoints α]
+variable [ContinuousConstSMul G α] [LocallyDenseSMul G α] [FaithfulSMul G α] [PerfectSpace α]
 
 theorem movingSubgroup_regularSupport_le_algSupport (g : G) :
     G•[(RegularSupport α g : Set α)ᶜ] ≤ AlgSupport g := by

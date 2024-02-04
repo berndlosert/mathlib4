@@ -19,6 +19,7 @@ open Topology
 /--
 A topological space has no isolated point if `𝓝 p ⊓ 𝓟 {p}ᶜ ≠ ⊥` for every point `p`.
 -/
+@[deprecated]
 class NoIsolatedPoints (α : Type*) [TopologicalSpace α] : Prop :=
   /-- The punctured neighborhood of every point is non-bot. -/
   not_isolated' : ∀ p : α, Filter.NeBot (𝓝[≠] p)

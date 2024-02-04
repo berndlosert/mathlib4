@@ -132,7 +132,7 @@ def RegularSupportBasis.ofFinite (s : Set G) (s_finite : s.Finite) : RegularSupp
 theorem RegularSupportBasis.coe_ofFinite {s : Set G} (s_finite : s.Finite) :
     (↑(RegularSupportBasis.ofFinite α s s_finite) : Set α) = ⋂ g ∈ s, RegularSupport α g := rfl
 
-variable [LocallyCompactSpace α] [T2Space α] [NoIsolatedPoints α]
+variable [LocallyCompactSpace α] [T2Space α] [PerfectSpace α]
 variable [ContinuousConstSMul G α] [LocallyDenseSMul G α]
 
 variable (G) in

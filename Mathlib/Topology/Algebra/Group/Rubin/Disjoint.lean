@@ -158,7 +158,7 @@ variable [T2Space α] [ContinuousConstSMul G α]
 If two points have disjoint `(fixedBy α g)ᶜ` sets, then they are algebraically disjoint.
 -/
 theorem IsAlgDisjoint.of_disjoint_movedBy [LocallyDenseSMul G α] [FaithfulSMul G α]
-    [NoIsolatedPoints α] {f g : G} (disj_fg : Disjoint (fixedBy α f)ᶜ (fixedBy α g)ᶜ) :
+    [PerfectSpace α] {f g : G} (disj_fg : Disjoint (fixedBy α f)ᶜ (fixedBy α g)ᶜ) :
     IsAlgDisjoint f g := by
   intro i nc
 
@@ -258,7 +258,7 @@ lemma dvd_twelve_of_lt_5_of_pos {i : ℕ} (i_pos : 0 < i) (i_lt_5 : i < 5) : i �
   }
   all_goals (intro; norm_num)
 
-variable [LocallyDenseSMul G α] [FaithfulSMul G α] [NoIsolatedPoints α]
+variable [LocallyDenseSMul G α] [FaithfulSMul G α] [PerfectSpace α]
 
 /--
 If one can construct a set `s` such that `g ^ i • s` is pairwise disjoint for `i < 5`,
